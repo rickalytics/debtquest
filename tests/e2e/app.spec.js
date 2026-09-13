@@ -63,9 +63,12 @@ test("mobile journey: onboarding, debt, payment, durable reload, backup, privacy
   await expect(
     page.getByRole("heading", { name: "Privacy policy", exact: true }),
   ).toBeVisible();
-  await page.getByRole("link", { name: "Help & support" }).click();
+  await page
+    .getByRole("banner")
+    .getByRole("link", { name: "Help & support" })
+    .click();
   await expect(
-    page.getByRole("heading", { name: "DebtQuest support" }),
+    page.getByRole("heading", { name: "We've got your next step.", exact: true }),
   ).toBeVisible();
   expect(errors).toEqual([]);
 });

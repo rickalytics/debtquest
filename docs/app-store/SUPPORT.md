@@ -13,6 +13,8 @@ Prepared September 13, 2026. The customer pages and email-link configuration are
 
 `npm run release:check` now inspects the actual bundled HTML for a complete page and the currently configured address. Changing an environment value without rebuilding is insufficient.
 
+The current feature-branch preview redirects anonymous visitors to Vercel sign-in. It is suitable for the owner's review, but not for App Store privacy/support fields. Verify the final production pages from a signed-out browser before submission; a successful deployment status alone does not prove public access.
+
 ## Support workflow
 
 Assign a named primary operator and a backup before a connected public launch. As an internal starting target, check the private inbox and the in-app report queue every day. The public pages do not promise a response deadline that has not been staffed.
