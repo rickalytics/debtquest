@@ -307,13 +307,14 @@ function AuthScreen({ onToast }) {
 
   return (
     <div style={{
-      minHeight: "100dvh",
+      height: "100dvh",
+      overflowY: "auto",
       background: "#0a0a0f",
       color: "#e8e8f0",
       display: "flex",
       flexDirection: "column",
       alignItems: "stretch",
-      justifyContent: "center",
+      justifyContent: "flex-start",
       padding: "calc(24px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom))",
       maxWidth: 400,
       margin: "0 auto",
