@@ -9,7 +9,7 @@ Prepared September 13, 2026. This branch prepares the app; it is not a signed or
 3. Copy `.env.ios.example` to `.env.ios.local`. Choose the intended release mode explicitly:
    - `local`: independent device-only tracker, no login, no automatic cross-device sync. Existing PWA data moves by JSON export/import.
    - `cloud`: use the SAME Supabase project as the existing PWA, and supply its URL and public anon/publishable key. This preserves access to existing cloud accounts. The service-role key must never go in the app or any VITE variable.
-4. Set a monitored `VITE_SUPPORT_EMAIL` in both the iOS environment and the existing web deployment environment. The bundled pages have a public GitHub support fallback for development, but release-check requires a private support contact.
+4. Set a monitored `VITE_SUPPORT_EMAIL` in both the iOS environment and the existing web deployment environment. Privacy/support pages contain the full text and private email links in HTML, without requiring sign-in or JavaScript. Unconfigured previews show a launch notice; they do not send users to public GitHub issues. `release:check` blocks a missing contact or stale bundled page. Complete [SUPPORT.md](SUPPORT.md) before publication.
 5. Run `npm test`, `npm run ios:sync`, `npm run release:check`, then `npm run ios:open`.
 6. In Xcode select the App target and your Apple team under Signing & Capabilities. The proposed bundle ID is `com.rickalytics.debtquest`; confirm it is available and correct before creating the App Store Connect record. Keep capacitor.config.json and the Xcode target in sync if changing it.
 7. Run on an iPhone. The target is iPhone-only, portrait, iOS 15.4+. Test iPad compatibility mode too. Local browser mobile emulation does not replace this step.
@@ -27,7 +27,7 @@ A cloud build must not be submitted before completing these steps. Private circl
 - Test account creation with email confirmation enabled, email delivery, sign-in after confirmation, and account recovery using the configured Supabase email flow. The sign-in screen provides password reset; the email link opens the canonical web app with a new-password screen. Configure allowed redirect URLs and verify the full flow.
 - With a NEW disposable account, verify deletion removes both the auth user and the corresponding debtquest_data row. Verify missing/invalid tokens and wrong passwords cannot delete records; verify a supplied third-party user ID is ignored.
 - Verify two different users cannot read or change each other's records. Test two devices on the same account: after one saves, the stale device must reject its change and prompt for reload. Cloud mode has no offline write queue or live multi-user merge.
-- Review provider log/backup retention and update the privacy policy if needed. The manifest and App Store disclosures must reflect the actual shipped mode and providers.
+- Complete the provider/retention inventory in [PRIVACY.md](PRIVACY.md) and the support/moderation setup in [SUPPORT.md](SUPPORT.md). Confirm the policy's operator identity, provider commitments, and retention practices match the live service. The manifest and App Store disclosures must reflect the actual shipped mode and providers.
 
 The existing PWA should be updated to the same conflict-protected save implementation before advertising safe multi-device use. An older PWA client can still perform unconditional writes. Coordinate rollout and ask existing users to close/reopen their PWA after the update.
 

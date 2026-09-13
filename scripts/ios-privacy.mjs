@@ -13,6 +13,8 @@ const collected =
         "UserID",
         "OtherFinancialInfo",
         "OtherUserContent",
+        "CustomerSupport",
+        "GameplayContent",
         "ProductInteraction",
       ]
     : [];

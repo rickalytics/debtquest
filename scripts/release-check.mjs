@@ -1,5 +1,6 @@
 import { loadEnv } from "vite";
 import { readFileSync, existsSync } from "node:fs";
+import { getSupportEmail } from "./legal-pages.mjs";
 const env = loadEnv("ios", process.cwd(), "");
 const errors = [];
 const requireCheck = (condition, message) => {
@@ -12,7 +13,7 @@ requireCheck(
   "Set VITE_DATA_MODE in .env.ios.local.",
 );
 requireCheck(
-  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(env.VITE_SUPPORT_EMAIL || ""),
+  Boolean(getSupportEmail(env.VITE_SUPPORT_EMAIL)),
   "Set a monitored VITE_SUPPORT_EMAIL and rebuild both iOS and the support website.",
 );
 if (env.VITE_DATA_MODE === "cloud") {
@@ -45,6 +46,20 @@ for (const path of [
   "ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png",
 ])
   requireCheck(existsSync(path), `Missing ${path}; run npm run ios:sync.`);
+for (const page of ["privacy", "support"]) {
+  const path = `ios/App/App/public/${page}.html`;
+  if (!existsSync(path)) continue;
+  const html = readFileSync(path, "utf8");
+  requireCheck(
+    /<h1[ >]/.test(html) &&
+      html.includes(
+        `mailto:${getSupportEmail(env.VITE_SUPPORT_EMAIL)}?subject=`,
+      ) &&
+      !html.includes("contact-pending") &&
+      !html.includes("<!-- debtquest:contact-"),
+    `Rebuild iOS: ${page}.html must contain the full page and the configured private support contact.`,
+  );
+}
 requireCheck(
   !existsSync("ios/App/App/public/sw.js"),
   "Native bundle contains a service worker. Build with npm run ios:sync.",
