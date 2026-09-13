@@ -3,3 +3,8 @@ dist
 .env
 .vercel
 *.local
+.env.*
+!.env.example
+!.env.ios.example
+playwright-report/
+test-results/
