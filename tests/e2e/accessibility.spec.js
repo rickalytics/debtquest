@@ -21,6 +21,17 @@ test("core phone screens have accessible names, roles, and text contrast", async
     ).toEqual([]);
   }
   await page.getByRole("button", { name: "Settings", exact: true }).click();
+  // Check the rendered dialog after its entrance animation. Sampling halfway
+  // through an opacity transition measures transient blended text colors.
+  const dialog = page.getByRole("dialog");
+  await dialog.evaluate(async (element) => {
+    await Promise.all(
+      element
+        .getAnimations({ subtree: true })
+        .map((animation) => animation.finished.catch(() => {})),
+    );
+  });
+  await expect(dialog).toHaveCSS("opacity", "1");
   const result = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa"])
     .analyze();
