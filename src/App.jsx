@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, createContext, useContext } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, CartesianGrid } from "recharts";
 import {
   initDB,
@@ -10,6 +10,12 @@ import {
   signOut,
 } from "./db.js";
 import { supabase } from "./supabaseClient.js";
+import { parseBackup } from "./backup.js";
+import { exportBackup } from "./native.js";
+import DeleteAccountDialog from "./DeleteAccountDialog.jsx";
+import { LegalLinks } from "./Legal.jsx";
+
+const AppContext = createContext(null);
 
 // ─── Persistence: IndexedDB (local) or Supabase (cloud) ───
 
@@ -107,7 +113,6 @@ function ChartTooltip({ active, payload, label }) {
 
 // ─── Confetti burst ───
 function Confetti({ show }) {
-  if (!show) return null;
   const particles = useMemo(() => Array.from({ length: 40 }, (_, i) => ({
     id: i,
     x: Math.random() * 100,
@@ -116,6 +121,7 @@ function Confetti({ show }) {
     color: ["#7c6af7", "#f7c26a", "#6af7b8", "#f76a9b", "#6ac4f7"][i % 5],
     size: 4 + Math.random() * 6,
   })), []);
+  if (!show) return null;
 
   return (
     <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 9999, overflow: "hidden" }}>
@@ -180,14 +186,14 @@ function Modal({ open, onClose, title, children }) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} />
       <div style={{
-        position: "relative", width: "100%", maxWidth: 480, maxHeight: "85vh", overflow: "auto",
+        position: "relative", width: "100%", maxWidth: 480, maxHeight: "85dvh", overflow: "auto",
         background: "#13131a", border: "1px solid #2a2a3d", borderRadius: "20px 20px 0 0",
-        padding: "20px 20px 32px", animation: "slideUp 0.3s ease",
+        padding: "20px 20px calc(32px + env(safe-area-inset-bottom))", animation: "slideUp 0.3s ease",
       }}>
         <style>{`@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <h2 style={{ fontSize: 18, fontWeight: 700, color: "#f7c26a" }}>{title}</h2>
-          <button onClick={onClose} style={{ background: "#1c1c27", border: "1px solid #2a2a3d", borderRadius: 8, width: 32, height: 32, color: "#6b6b8a", cursor: "pointer", fontSize: 16 }}>✕</button>
+          <button aria-label="Close dialog" onClick={onClose} style={{ background: "#1c1c27", border: "1px solid #2a2a3d", borderRadius: 8, width: 32, height: 32, color: "#6b6b8a", cursor: "pointer", fontSize: 16 }}>✕</button>
         </div>
         {children}
       </div>
@@ -202,7 +208,7 @@ function Input({ label, ...props }) {
       <span style={{ fontSize: 11, color: "#6b6b8a", textTransform: "uppercase", letterSpacing: 1, display: "block", marginBottom: 4 }}>{label}</span>
       <input {...props} style={{
         width: "100%", padding: "10px 12px", background: "#1c1c27", border: "1px solid #2a2a3d",
-        borderRadius: 8, color: "#e8e8f0", fontSize: 15, outline: "none", fontFamily: "inherit",
+        borderRadius: 8, color: "#e8e8f0", fontSize: 16, outline: "none", fontFamily: "inherit",
         ...(props.style || {}),
       }} />
     </label>
@@ -215,7 +221,7 @@ function Select({ label, options, ...props }) {
       <span style={{ fontSize: 11, color: "#6b6b8a", textTransform: "uppercase", letterSpacing: 1, display: "block", marginBottom: 4 }}>{label}</span>
       <select {...props} style={{
         width: "100%", padding: "10px 12px", background: "#1c1c27", border: "1px solid #2a2a3d",
-        borderRadius: 8, color: "#e8e8f0", fontSize: 15, outline: "none", fontFamily: "inherit",
+        borderRadius: 8, color: "#e8e8f0", fontSize: 16, outline: "none", fontFamily: "inherit",
       }}>
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
@@ -249,6 +255,7 @@ function AuthScreen({ onToast }) {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
+  const [notice, setNotice] = useState(null);
   const inputStyle = {
     width: "100%",
     padding: "12px 14px",
@@ -256,7 +263,7 @@ function AuthScreen({ onToast }) {
     border: "1px solid #2a2a3d",
     borderRadius: 8,
     color: "#e8e8f0",
-    fontSize: 15,
+    fontSize: 16,
     outline: "none",
     fontFamily: "inherit",
     marginBottom: 12,
@@ -273,6 +280,8 @@ function AuthScreen({ onToast }) {
     try {
       const { error } = await signInWithPassword(email.trim(), password);
       if (error) setErr(error.message);
+    } catch (e) {
+      setErr(e.message || "Unable to connect. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -288,7 +297,9 @@ function AuthScreen({ onToast }) {
     try {
       const { error } = await signUpWithPassword(email.trim(), password);
       if (error) setErr(error.message);
-      else onToast?.("Account created — you can sign in now.");
+      else setNotice("Check your email to confirm your account, then return here to sign in.");
+    } catch (e) {
+      setErr(e.message || "Unable to connect. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -296,14 +307,14 @@ function AuthScreen({ onToast }) {
 
   return (
     <div style={{
-      minHeight: "100vh",
+      minHeight: "100dvh",
       background: "#0a0a0f",
       color: "#e8e8f0",
       display: "flex",
       flexDirection: "column",
       alignItems: "stretch",
       justifyContent: "center",
-      padding: 24,
+      padding: "calc(24px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom))",
       maxWidth: 400,
       margin: "0 auto",
       boxSizing: "border-box",
@@ -317,11 +328,13 @@ function AuthScreen({ onToast }) {
           Sign in to sync data in the cloud (same login on phone and desktop).
         </p>
       </div>
+      {notice && <p role="status" style={{ color: "#6af7b8", marginBottom: 12 }}>{notice}</p>}
       {err && (
         <div style={{ color: "#f76a6a", fontSize: 13, marginBottom: 12, textAlign: "center" }}>{err}</div>
       )}
       <input
         type="email"
+        aria-label="Email"
         placeholder="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
@@ -330,6 +343,7 @@ function AuthScreen({ onToast }) {
       />
       <input
         type="password"
+        aria-label="Password"
         placeholder="Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
@@ -342,6 +356,7 @@ function AuthScreen({ onToast }) {
       <Btn variant="ghost" onClick={handleSignUp} disabled={busy}>
         {busy ? "…" : "Create account"}
       </Btn>
+      <LegalLinks />
     </div>
   );
 }
@@ -361,75 +376,70 @@ export default function DebtQuest() {
   const [paymentSuccess, setPaymentSuccess] = useState(null);
   const [showAddReward, setShowAddReward] = useState(false);
 
-  // Load data: IndexedDB locally, or Supabase after auth
+  const [loadError, setLoadError] = useState(null);
+  const [saveError, setSaveError] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+
+  // Auth callbacks stay synchronous: awaiting another auth call here can deadlock.
   useEffect(() => {
-    if (!isSupabaseConfigured) {
-      (async () => {
-        try {
-          await initDB();
-          const loaded = await loadAllData();
-          setData(loaded);
-        } catch (e) {
-          console.error("DB load failed:", e);
-          setData({ ...DEFAULT_DATA });
-        }
-      })();
-      return;
-    }
-
-    if (!supabase) {
-      setAuthReady(true);
-      return;
-    }
-
+    if (!supabase) return;
     let mounted = true;
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
       setAuthUser(session?.user ?? null);
-      if (session?.user) {
-        try {
-          const loaded = await loadAllData();
-          setData(loaded);
-        } catch (e) {
-          console.error("DB load failed:", e);
-          setData({ ...DEFAULT_DATA });
-        }
-      } else {
-        setData(null);
-      }
       setAuthReady(true);
     });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (!mounted) return;
+      if (error) setLoadError(error.message);
       setAuthUser(session?.user ?? null);
-      if (session?.user) {
-        try {
-          const loaded = await loadAllData();
-          setData(loaded);
-        } catch (e) {
-          console.error("DB load failed:", e);
-          setData({ ...DEFAULT_DATA });
-        }
-      } else {
-        setData(null);
-      }
       setAuthReady(true);
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+    }).catch(e => { if (mounted) { setLoadError(e.message); setAuthReady(true); } });
+    return () => { mounted = false; subscription.unsubscribe(); };
   }, []);
 
-  // Persist data (IndexedDB or Supabase)
+  const userId = authUser?.id;
+  useEffect(() => {
+    if (!authReady) return;
+    let active = true;
+    setData(null);
+    setLoadError(null);
+    setSaveError(null);
+    setShowDeleteAccount(false);
+    setTab("dashboard");
+    if (isSupabaseConfigured && !userId) return;
+    (async () => {
+      try {
+        await initDB();
+        const loaded = await loadAllData();
+        if (active) setData(loaded);
+      } catch (e) {
+        if (active) setLoadError(e.message || "Unable to load your data.");
+      }
+    })();
+    return () => { active = false; };
+  }, [authReady, userId, reloadKey]);
+
+  // Keep the last durable state visible until the write succeeds. Block overlapping
+  // edits, and leave failed forms intact so the user can retry without data loss.
   const save = useCallback(async (newData) => {
-    setData(newData);
+    if (savingRef.current) return false;
+    savingRef.current = true;
+    setSaving(true);
+    setSaveError(null);
     try {
       await saveAllData(newData);
+      setData(newData);
+      return true;
     } catch (e) {
-      console.error("Save failed:", e);
+      setSaveError(e.message || "Unable to save. Check your connection and try again.");
+      return false;
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
     }
   }, []);
 
@@ -447,49 +457,50 @@ export default function DebtQuest() {
 
   // Check and award achievements
   const checkAchievements = useCallback((newData) => {
-    let awarded = false;
     const updated = { ...newData, achievements: [...newData.achievements] };
     for (const badge of BADGE_DEFS) {
       if (!updated.achievements.includes(badge.id) && badge.check(updated)) {
         updated.achievements.push(badge.id);
         updated.xp += 200;
-        awarded = true;
-        showToast(`🏆 Badge unlocked: ${badge.name}!`);
+
       }
     }
-    if (awarded) triggerConfetti();
     return updated;
-  }, [showToast, triggerConfetti]);
+  }, []);
 
   // ─── Add Account ───
-  const handleAddAccount = useCallback((form) => {
+  const handleAddAccount = useCallback(async (form) => {
+    if (!form.name.trim() || ![form.originalBalance, form.currentBalance || 0, form.interestRate || 0, form.minimumPayment || 0].every(v => Number.isFinite(Number(v)) && Number(v) >= 0) || !Number.isInteger(Number(form.dueDate)) || Number(form.dueDate) < 1 || Number(form.dueDate) > 31) {
+      showToast("Enter valid balances, rates, and a due day from 1 to 31.", "error"); return;
+    }
     const acct = {
       id: uid(),
       name: form.name,
       type: form.type,
       originalBalance: parseFloat(form.originalBalance) || 0,
-      currentBalance: parseFloat(form.currentBalance) || parseFloat(form.originalBalance) || 0,
+      currentBalance: form.currentBalance === "" ? Number(form.originalBalance) : Number(form.currentBalance),
       interestRate: parseFloat(form.interestRate) || 0,
       minimumPayment: parseFloat(form.minimumPayment) || 0,
       dueDate: parseInt(form.dueDate) || 1,
       emoji: DEBT_TYPES.find(t => t.value === form.type)?.emoji || "📦",
       color: ACCOUNT_COLORS[data.accounts.length % ACCOUNT_COLORS.length],
       createdAt: new Date().toISOString(),
-      isPaidOff: false,
+      isPaidOff: form.currentBalance !== "" && Number(form.currentBalance) === 0,
     };
     const newData = { ...data, accounts: [...data.accounts, acct] };
-    save(checkAchievements(newData));
+    if (!await save(checkAchievements(newData))) return;
     setShowAddAccount(false);
     showToast(`${acct.emoji} ${acct.name} added!`);
   }, [data, save, checkAchievements, showToast]);
 
   // ─── Log Payment ───
-  const handleLogPayment = useCallback((form) => {
+  const handleLogPayment = useCallback(async (form) => {
     const acctIdx = data.accounts.findIndex(a => a.id === form.accountId);
     if (acctIdx < 0) return;
 
     const acct = { ...data.accounts[acctIdx] };
     const amount = parseFloat(form.amount) || 0;
+    if (!Number.isFinite(amount) || amount <= 0 || amount > acct.currentBalance) { showToast("Enter a payment greater than zero and no more than the remaining balance.", "error"); return; }
     const balAfter = Math.max(0, acct.currentBalance - amount);
 
     const payment = {
@@ -542,7 +553,7 @@ export default function DebtQuest() {
 
     newData = checkAchievements(newData);
     const newBadges = newData.achievements.filter(a => !data.achievements.includes(a));
-    save(newData);
+    if (!await save(newData)) return;
     setShowLogPayment(false);
 
     // Build mini projection for this account
@@ -655,13 +666,14 @@ export default function DebtQuest() {
   }, [data, save, checkAchievements, showToast, triggerConfetti]);
 
   // Delete account
-  const handleDeleteAccount = useCallback((id) => {
+  const handleDeleteAccount = useCallback(async (id) => {
+    if (!window.confirm("Delete this debt and its payment history? This cannot be undone.")) return;
     const newData = {
       ...data,
       accounts: data.accounts.filter(a => a.id !== id),
       payments: data.payments.filter(p => p.accountId !== id),
     };
-    save(newData);
+    if (!await save(newData)) return;
     setSelectedAccount(null);
     setShowEditAccount(null);
     showToast("Account deleted");
@@ -688,6 +700,8 @@ export default function DebtQuest() {
     }
     return points;
   }, []);
+
+  if (loadError) return <div className="release-error" role="alert"><h1>Your data could not be loaded</h1><p>{loadError}</p><p>Your saved data has not been replaced.</p><Btn onClick={() => setReloadKey(k => k + 1)}>Retry</Btn><LegalLinks /></div>;
 
   if (isSupabaseConfigured && !authReady) {
     return (
@@ -724,8 +738,103 @@ export default function DebtQuest() {
   const levelProgress = nextLevel ? ((data.xp - level.minXP) / (nextLevel.minXP - level.minXP)) * 100 : 100;
   const totalPayments = data.payments.reduce((s, p) => s + p.amountPaid, 0);
 
-  // ─── DASHBOARD ───
-  const Dashboard = () => (
+  // ─── RENDER ───
+  const screens = { dashboard: Dashboard, detail: AccountDetail, projections: Projections, achievements: Achievements, rewards: Rewards, settings: Settings };
+  const Screen = screens[tab] || Dashboard;
+
+  return (
+    <AppContext.Provider value={{ data, setTab, setSelectedAccount, setShowAddAccount, totalCurrent, totalPaid, overallProgress, level, nextLevel, levelProgress, selectedAccount, setShowLogPayment, setShowEditAccount, buildProjection, totalPayments, authUser, setShowDeleteAccount, save, showToast, handleDeleteAccount, setShowAddReward, triggerConfetti, showAddReward, showAddAccount, handleAddAccount, showLogPayment, handleLogPayment, showEditAccount, paymentSuccess, setPaymentSuccess }}>
+    <div style={{
+      maxWidth: 480, margin: "0 auto", height: "100dvh", display: "flex", flexDirection: "column", paddingTop: "env(safe-area-inset-top)", background: "#0a0a0f", color: "#e8e8f0",
+      position: "relative", overflow: "hidden",
+    }}>
+      <style>{`
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
+
+      <Confetti show={showConfetti} />
+      {paymentSuccess && <PaymentSuccess />}
+
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          position: "fixed", top: "calc(20px + env(safe-area-inset-top))", left: "50%", transform: "translateX(-50%)", zIndex: 2000,
+          background: toast.type === "error" ? "#3a1020" : "#102a1a",
+          border: `1px solid ${toast.type === "error" ? "#f76a6a" : "#6af7b8"}`,
+          borderRadius: 12, padding: "10px 20px", fontSize: 13, fontWeight: 600,
+          color: toast.type === "error" ? "#f76a6a" : "#6af7b8",
+          animation: "fadeUp 0.3s ease",
+        }}>
+          {toast.msg}
+        </div>
+      )}
+
+      {saving && <div className="save-overlay" role="status">Saving…</div>}
+      {saveError && <div className="save-error" role="alert"><p>Change was not saved. {saveError}</p><button onClick={() => setSaveError(null)}>Dismiss and retry</button><button onClick={() => window.location.reload()}>Reload saved data</button></div>}
+      {showDeleteAccount && <DeleteAccountDialog onClose={() => setShowDeleteAccount(false)} onDeleted={() => { setShowDeleteAccount(false); setData(null); setAuthUser(null); }} />}
+
+      {/* Header */}
+      <div style={{
+        padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center",
+        borderBottom: "1px solid #1c1c27", background: "rgba(10,10,15,0.95)", backdropFilter: "blur(10px)",
+        position: "sticky", top: 0, zIndex: 100,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 22 }}>🎯</span>
+          <span style={{ fontSize: 18, fontWeight: 800, fontFamily: "'Syne', sans-serif" }}>Debt<span style={{ color: "#f7c26a" }}>Quest</span></span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 12, color: "#6b6b8a" }}>{level.emoji} Lv.{LEVELS.indexOf(level) + 1}</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#f7c26a" }}>{data.xp} XP</span>
+        </div>
+      </div>
+
+      {/* Screen */}
+      <div style={{ paddingTop: 16, paddingBottom: "calc(80px + env(safe-area-inset-bottom))", flex: 1, minHeight: 0, overflow: "auto" }}>
+        <Screen />
+      </div>
+
+      {/* FAB - Log Payment */}
+      {tab === "dashboard" && data.accounts.some(a => !a.isPaidOff) && (
+        <button onClick={() => setShowLogPayment(true)} style={{
+          position: "fixed", bottom: "calc(80px + env(safe-area-inset-bottom))", right: "max(16px, calc(50% - 224px))", zIndex: 50,
+          width: 56, height: 56, borderRadius: "50%",
+          background: "linear-gradient(135deg, #f7c26a, #f7a64e)", border: "none",
+          fontSize: 24, cursor: "pointer", boxShadow: "0 4px 20px rgba(247,194,106,0.3)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          💰
+        </button>
+      )}
+
+      {/* Bottom Nav */}
+      <div style={{
+        position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
+        width: "100%", maxWidth: 480, background: "rgba(10,10,15,0.95)", backdropFilter: "blur(10px)",
+        borderTop: "1px solid #1c1c27", display: "flex", justifyContent: "space-around", padding: "6px 0 env(safe-area-inset-bottom, 8px)",
+        zIndex: 100,
+      }}>
+        <NavIcon icon="🏠" label="Home" active={tab === "dashboard"} onClick={() => setTab("dashboard")} />
+        <NavIcon icon="📊" label="Projections" active={tab === "projections"} onClick={() => setTab("projections")} />
+        <NavIcon icon="🎁" label="Rewards" active={tab === "rewards"} onClick={() => setTab("rewards")} />
+        <NavIcon icon="🏆" label="Badges" active={tab === "achievements"} onClick={() => setTab("achievements")} />
+        <NavIcon icon="⚙️" label="Settings" active={tab === "settings"} onClick={() => setTab("settings")} />
+      </div>
+
+      {/* Modals */}
+      {showAddAccount && <AddAccountModal />}
+      {showLogPayment && <LogPaymentModal />}
+      <EditAccountModal />
+      {showAddReward && <AddRewardModal />}
+    </div>
+    </AppContext.Provider>
+  );
+}
+
+
+const Dashboard = () => {
+  const { data, setTab, setSelectedAccount, setShowAddAccount, totalCurrent, totalPaid, overallProgress, level, nextLevel, levelProgress } = useContext(AppContext);
+  return (
     <div style={{ padding: "0 16px 100px" }}>
       {/* Hero card */}
       <div style={{
@@ -833,9 +942,11 @@ export default function DebtQuest() {
       )}
     </div>
   );
+};
 
-  // ─── ACCOUNT DETAIL ───
-  const AccountDetail = () => {
+const AccountDetail = () => {
+  const { data, setTab, selectedAccount, setShowLogPayment, setShowEditAccount } = useContext(AppContext);
+
     const acct = data.accounts.find(a => a.id === selectedAccount);
     if (!acct) return <div style={{ padding: 20, color: "#6b6b8a" }}>Account not found</div>;
     const prog = pct(acct.currentBalance, acct.originalBalance);
@@ -905,8 +1016,9 @@ export default function DebtQuest() {
     );
   };
 
-  // ─── PROJECTIONS ───
-  const Projections = () => {
+const Projections = () => {
+  const { data, buildProjection } = useContext(AppContext);
+
     const minOnly = buildProjection(data.accounts, 0);
     const extra200 = buildProjection(data.accounts, 200);
     const extra500 = buildProjection(data.accounts, 500);
@@ -987,8 +1099,9 @@ export default function DebtQuest() {
     );
   };
 
-  // ─── ACHIEVEMENTS ───
-  const Achievements = () => (
+const Achievements = () => {
+  const { data, level, nextLevel, levelProgress, totalPayments } = useContext(AppContext);
+  return (
     <div style={{ padding: "0 16px 100px" }}>
       {/* XP / Level card */}
       <div style={{
@@ -1046,15 +1159,14 @@ export default function DebtQuest() {
       </div>
     </div>
   );
+};
 
-  // ─── SETTINGS ───
-  const Settings = () => {
-    const handleExport = () => {
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = `debtquest-backup-${new Date().toISOString().split("T")[0]}.json`;
-      a.click(); URL.revokeObjectURL(url);
+const Settings = () => {
+  const { data, authUser, setTab, setShowDeleteAccount, save, showToast, handleDeleteAccount } = useContext(AppContext);
+
+    const handleExport = async () => {
+      try { await exportBackup(data); }
+      catch { showToast("Backup was not shared. Please try Export again.", "error"); }
     };
 
     const handleImport = () => {
@@ -1063,21 +1175,19 @@ export default function DebtQuest() {
       input.onchange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        const text = await file.text();
         try {
-          const imported = JSON.parse(text);
-          if (imported.accounts && imported.payments) {
-            save(imported);
-            showToast("Data imported successfully! 🎉");
-          }
-        } catch { showToast("Invalid file", "error"); }
+          if (file.size > 10 * 1024 * 1024) throw new Error("Backup exceeds the 10 MB limit.");
+          const imported = parseBackup(await file.text());
+          if (!window.confirm("Replace the data in this account with this backup? Export a backup first if you want to keep the current data.")) return;
+          if (await save(imported)) showToast("Data imported successfully! 🎉");
+        } catch (e) { showToast(e.message || "Invalid backup file", "error"); }
       };
       input.click();
     };
 
     const handleReset = async () => {
       if (confirm("⚠️ This will delete ALL your data. Are you sure?")) {
-        await save({ ...DEFAULT_DATA });
+        if (!await save({ ...DEFAULT_DATA })) return;
         setTab("dashboard");
         showToast("All data reset");
       }
@@ -1096,12 +1206,13 @@ export default function DebtQuest() {
             <Btn
               variant="ghost"
               onClick={async () => {
-                await signOut();
-                showToast("Signed out");
+                try { await signOut(); showToast("Signed out"); }
+                catch (e) { showToast(e.message, "error"); }
               }}
             >
               Sign out
             </Btn>
+            <Btn variant="danger" style={{ marginTop: 10 }} onClick={() => setShowDeleteAccount(true)}>Delete cloud account</Btn>
           </div>
         )}
 
@@ -1140,20 +1251,24 @@ export default function DebtQuest() {
           )}
         </div>
 
-        <div style={{ textAlign: "center", color: "#2a2a3d", fontSize: 11, marginTop: 20 }}>
+        <LegalLinks />
+        <p style={{ color: "#a6a6ba", fontSize: 12, lineHeight: 1.6, marginTop: 16 }}>{isSupabaseConfigured ? "Cloud mode: an internet connection is required to load and save. Reload before editing on a second device." : "Device-only mode: data stays in this app on this device. Export regular backups before changing phones or uninstalling."}</p>
+        <p style={{ color: "#a6a6ba", fontSize: 12, lineHeight: 1.6, marginTop: 12 }}>DebtQuest records payments you enter; it does not send payments or connect to your bank. Projections are estimates and may differ from lender statements.</p>
+        <div style={{ textAlign: "center", color: "#a6a6ba", fontSize: 11, marginTop: 20 }}>
           DebtQuest v1.0 · Built with 🎯
         </div>
       </div>
     );
   };
 
-  // ─── REWARDS SHOP ───
-  const Rewards = () => {
+const Rewards = () => {
+  const { data, setShowAddReward, save, showToast, triggerConfetti } = useContext(AppContext);
+
     const spendable = data.xp;
     const rewards = data.rewards || [];
     const redeemed = data.redeemedRewards || [];
 
-    const handleRedeem = (reward) => {
+    const handleRedeem = async (reward) => {
       if (spendable < reward.cost) return showToast("Not enough XP!", "error");
       const entry = { id: uid(), rewardId: reward.id, name: reward.name, emoji: reward.emoji, cost: reward.cost, date: new Date().toISOString().split("T")[0] };
       const newData = {
@@ -1161,13 +1276,13 @@ export default function DebtQuest() {
         xp: data.xp - reward.cost,
         redeemedRewards: [...redeemed, entry],
       };
-      save(newData);
+      if (!await save(newData)) return;
       triggerConfetti();
       showToast(`${reward.emoji} Redeemed: ${reward.name}!`);
     };
 
-    const handleDeleteReward = (id) => {
-      save({ ...data, rewards: rewards.filter(r => r.id !== id) });
+    const handleDeleteReward = async (id) => {
+      if (!await save({ ...data, rewards: rewards.filter(r => r.id !== id) })) return;
       showToast("Reward removed");
     };
 
@@ -1269,8 +1384,9 @@ export default function DebtQuest() {
     );
   };
 
-  // ─── ADD REWARD MODAL ───
-  const AddRewardModal = () => {
+const AddRewardModal = () => {
+  const { data, showAddReward, setShowAddReward, save, showToast } = useContext(AppContext);
+
     const [form, setForm] = useState({ name: "", desc: "", emoji: "🎁", cost: "" });
     const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
     const emojis = ["🎁", "🧹", "🍽️", "💆", "🍆", "🍑", "😴", "🎬", "🛍️", "🏖️", "🍕", "🎮", "💐", "🍷", "🚗", "💅", "🧖", "☕", "🔥"];
@@ -1294,10 +1410,10 @@ export default function DebtQuest() {
         </div>
         <Input label="XP Cost" type="number" placeholder="1000" value={form.cost} onChange={e => set("cost", e.target.value)} />
         <div style={{ marginTop: 8 }}>
-          <Btn variant="gold" onClick={() => {
-            if (!form.name || !form.cost) return;
+          <Btn variant="gold" onClick={async () => {
+            if (!form.name || !Number.isInteger(Number(form.cost)) || Number(form.cost) <= 0) return;
             const reward = { id: uid(), name: form.name, desc: form.desc, emoji: form.emoji, cost: parseInt(form.cost) || 500, createdBy: "" };
-            save({ ...data, rewards: [...(data.rewards || []), reward] });
+            if (!await save({ ...data, rewards: [...(data.rewards || []), reward] })) return;
             setShowAddReward(false);
             showToast(`${reward.emoji} Reward added!`);
           }}>🎁 Add Reward</Btn>
@@ -1306,8 +1422,9 @@ export default function DebtQuest() {
     );
   };
 
-  // ─── ADD ACCOUNT MODAL ───
-  const AddAccountModal = () => {
+const AddAccountModal = () => {
+  const { showAddAccount, setShowAddAccount, handleAddAccount } = useContext(AppContext);
+
     const [form, setForm] = useState({ name: "", type: "credit_card", originalBalance: "", currentBalance: "", interestRate: "", minimumPayment: "", dueDate: "1" });
     const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
     return (
@@ -1332,8 +1449,9 @@ export default function DebtQuest() {
     );
   };
 
-  // ─── LOG PAYMENT MODAL ───
-  const LogPaymentModal = () => {
+const LogPaymentModal = () => {
+  const { data, showLogPayment, setShowLogPayment, handleLogPayment } = useContext(AppContext);
+
     const defaultAcct = typeof showLogPayment === "string" ? showLogPayment : (data.accounts[0]?.id || "");
     const [form, setForm] = useState({
       accountId: defaultAcct,
@@ -1373,8 +1491,9 @@ export default function DebtQuest() {
     );
   };
 
-  // ─── EDIT ACCOUNT MODAL ───
-  const EditAccountModal = () => {
+const EditAccountModal = () => {
+  const { showEditAccount, setShowEditAccount, handleDeleteAccount } = useContext(AppContext);
+
     const acct = showEditAccount;
     if (!acct) return null;
     return (
@@ -1387,8 +1506,9 @@ export default function DebtQuest() {
     );
   };
 
-  // ─── PAYMENT SUCCESS SCREEN ───
-  const PaymentSuccess = () => {
+const PaymentSuccess = () => {
+  const { data, setTab, setSelectedAccount, paymentSuccess, setPaymentSuccess, level } = useContext(AppContext);
+
     const s = paymentSuccess;
     if (!s) return null;
     const prog = pct(s.acct.currentBalance, s.acct.originalBalance);
@@ -1872,90 +1992,3 @@ export default function DebtQuest() {
       </div>
     );
   };
-
-  // ─── RENDER ───
-  const screens = { dashboard: Dashboard, detail: AccountDetail, projections: Projections, achievements: Achievements, rewards: Rewards, settings: Settings };
-  const Screen = screens[tab] || Dashboard;
-
-  return (
-    <div style={{
-      maxWidth: 480, margin: "0 auto", minHeight: "100vh", background: "#0a0a0f", color: "#e8e8f0",
-      position: "relative", overflow: "hidden",
-    }}>
-      <style>{`
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-      `}</style>
-
-      <Confetti show={showConfetti} />
-      {paymentSuccess && <PaymentSuccess />}
-
-      {/* Toast */}
-      {toast && (
-        <div style={{
-          position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)", zIndex: 2000,
-          background: toast.type === "error" ? "#3a1020" : "#102a1a",
-          border: `1px solid ${toast.type === "error" ? "#f76a6a" : "#6af7b8"}`,
-          borderRadius: 12, padding: "10px 20px", fontSize: 13, fontWeight: 600,
-          color: toast.type === "error" ? "#f76a6a" : "#6af7b8",
-          animation: "fadeUp 0.3s ease",
-        }}>
-          {toast.msg}
-        </div>
-      )}
-
-      {/* Header */}
-      <div style={{
-        padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center",
-        borderBottom: "1px solid #1c1c27", background: "rgba(10,10,15,0.95)", backdropFilter: "blur(10px)",
-        position: "sticky", top: 0, zIndex: 100,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 22 }}>🎯</span>
-          <span style={{ fontSize: 18, fontWeight: 800, fontFamily: "'Syne', sans-serif" }}>Debt<span style={{ color: "#f7c26a" }}>Quest</span></span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 12, color: "#6b6b8a" }}>{level.emoji} Lv.{LEVELS.indexOf(level) + 1}</span>
-          <span style={{ fontSize: 12, fontWeight: 700, color: "#f7c26a" }}>{data.xp} XP</span>
-        </div>
-      </div>
-
-      {/* Screen */}
-      <div style={{ paddingTop: 16, paddingBottom: 80, minHeight: "calc(100vh - 120px)", overflow: "auto" }}>
-        <Screen />
-      </div>
-
-      {/* FAB - Log Payment */}
-      {tab === "dashboard" && data.accounts.some(a => !a.isPaidOff) && (
-        <button onClick={() => setShowLogPayment(true)} style={{
-          position: "fixed", bottom: 80, right: "max(16px, calc(50% - 224px))", zIndex: 50,
-          width: 56, height: 56, borderRadius: "50%",
-          background: "linear-gradient(135deg, #f7c26a, #f7a64e)", border: "none",
-          fontSize: 24, cursor: "pointer", boxShadow: "0 4px 20px rgba(247,194,106,0.3)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          💰
-        </button>
-      )}
-
-      {/* Bottom Nav */}
-      <div style={{
-        position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
-        width: "100%", maxWidth: 480, background: "rgba(10,10,15,0.95)", backdropFilter: "blur(10px)",
-        borderTop: "1px solid #1c1c27", display: "flex", justifyContent: "space-around", padding: "6px 0 env(safe-area-inset-bottom, 8px)",
-        zIndex: 100,
-      }}>
-        <NavIcon icon="🏠" label="Home" active={tab === "dashboard"} onClick={() => setTab("dashboard")} />
-        <NavIcon icon="📊" label="Projections" active={tab === "projections"} onClick={() => setTab("projections")} />
-        <NavIcon icon="🎁" label="Rewards" active={tab === "rewards"} onClick={() => setTab("rewards")} />
-        <NavIcon icon="🏆" label="Badges" active={tab === "achievements"} onClick={() => setTab("achievements")} />
-        <NavIcon icon="⚙️" label="Settings" active={tab === "settings"} onClick={() => setTab("settings")} />
-      </div>
-
-      {/* Modals */}
-      <AddAccountModal />
-      {showLogPayment && <LogPaymentModal />}
-      <EditAccountModal />
-      <AddRewardModal />
-    </div>
-  );
-}

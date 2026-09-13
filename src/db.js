@@ -1,4 +1,5 @@
 import Dexie from "dexie";
+import { validateData } from "./backup.js";
 import { isSupabaseConfigured, supabase } from "./supabaseClient.js";
 
 const db = new Dexie("DebtQuestDB");
@@ -17,7 +18,7 @@ export const DEFAULT_REWARDS = [
   { id: "r3", name: "Sleep In Pass", desc: "Other player handles the morning", emoji: "😴", cost: 750, createdBy: "" },
   { id: "r4", name: "Dinner Date", desc: "Other player plans & pays for date night", emoji: "🍽️", cost: 2000, createdBy: "" },
   { id: "r5", name: "Spa Day", desc: "Full spa day — you earned it", emoji: "💆", cost: 5000, createdBy: "" },
-  { id: "r6", name: "Quality Time", desc: "You know what this means 😏", emoji: "🍆", cost: 2500, createdBy: "" },
+  { id: "r6", name: "Quality Time", desc: "Plan an evening together", emoji: "💛", cost: 2500, createdBy: "" },
   { id: "r7", name: "No Chores Weekend", desc: "Full weekend off from all chores", emoji: "🏖️", cost: 3000, createdBy: "" },
   { id: "r8", name: "Treat Yourself", desc: "$50 guilt-free spending money", emoji: "🛍️", cost: 4000, createdBy: "" },
 ];
@@ -78,80 +79,39 @@ async function saveDexie(data) {
   });
 }
 
-function hasMeaningfulLocalData(d) {
-  if (!d) return false;
-  if ((d.accounts?.length || 0) > 0) return true;
-  if ((d.payments?.length || 0) > 0) return true;
-  if ((d.xp || 0) > 0) return true;
-  if ((d.streak || 0) > 0) return true;
-  if ((d.achievements?.length || 0) > 0) return true;
-  return false;
-}
-
-async function clearDexieUserData() {
-  await db.transaction("rw", db.appState, db.accounts, db.payments, db.rewards, db.redeemedRewards, async () => {
-    await db.appState.clear();
-    await db.accounts.clear();
-    await db.payments.clear();
-    await db.rewards.clear();
-    await db.redeemedRewards.clear();
-  });
-  await initDexie();
-}
+// Remember the exact server version read by this session. Conditional updates
+// prevent an older phone/desktop session from silently replacing newer data.
+const cloudVersions = new Map();
 
 async function loadCloud(userId) {
-  const { data: row, error } = await supabase
-    .from("debtquest_data")
-    .select("payload")
-    .eq("user_id", userId)
-    .maybeSingle();
-
+  const { data: row, error } = await supabase.from("debtquest_data")
+    .select("payload, updated_at").eq("user_id", userId).maybeSingle();
   if (error) throw error;
-
   const payload = row?.payload;
-  if (payload && typeof payload === "object" && Object.keys(payload).length > 0) {
-    const { accounts, payments, rewards, redeemedRewards, ...stateFields } = payload;
-    return mergeLoaded(
-      { ...DEFAULT_STATE, ...stateFields, id: "main" },
-      accounts,
-      payments,
-      rewards,
-      redeemedRewards,
-    );
-  }
-
-  await initDexie();
-  const local = await loadDexieMerged();
-  if (hasMeaningfulLocalData(local)) {
-    await saveCloud(userId, local);
-    await clearDexieUserData();
-    return local;
-  }
-
-  return mergeLoaded(DEFAULT_STATE, [], [], [], []);
+  const loaded = payload && Object.keys(payload).length
+    ? validateData(payload)
+    : mergeLoaded(DEFAULT_STATE, [], [], DEFAULT_REWARDS, []);
+  cloudVersions.set(userId, row ? row.updated_at : null);
+  // Local data moves only via an explicit backup import, never on account login.
+  return loaded;
 }
 
 async function saveCloud(userId, data) {
-  const { accounts, payments, rewards, redeemedRewards, ...rest } = data;
-  const payload = {
-    ...rest,
-    accounts,
-    payments,
-    rewards,
-    redeemedRewards,
-  };
+  if (!cloudVersions.has(userId)) throw new Error("Reload your account before saving.");
+  const previous = cloudVersions.get(userId);
+  const updatedAt = new Date(Math.max(Date.now(), (Date.parse(previous) || 0) + 1)).toISOString();
+  const payload = { ...data };
   delete payload.id;
-
-  const { error } = await supabase.from("debtquest_data").upsert(
-    {
-      user_id: userId,
-      payload,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id" },
-  );
-
+  const row = { user_id: userId, payload, updated_at: updatedAt };
+  const query = previous === null
+    ? supabase.from("debtquest_data").insert(row)
+    : supabase.from("debtquest_data").update(row).eq("user_id", userId).eq("updated_at", previous);
+  const { data: saved, error } = await query.select("updated_at").maybeSingle();
+  if (error?.code === "23505" || (!error && !saved)) {
+    throw new Error("Your data changed on another device. Reload to get the latest version, then try your change again.");
+  }
   if (error) throw error;
+  cloudVersions.set(userId, saved.updated_at);
 }
 
 /** IndexedDB only — no-op when using Supabase-only mode. */
@@ -193,7 +153,17 @@ export async function signUpWithPassword(email, password) {
 
 export async function signOut() {
   if (!supabase) return;
-  await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
+  cloudVersions.clear();
+}
+
+export async function deleteCloudAccount(password) {
+  if (!supabase) throw new Error("Cloud account is not configured.");
+  const { data, error } = await supabase.functions.invoke("delete-account", { body: { password } });
+  if (error || !data?.deleted) throw new Error("Account could not be deleted. Check your password and connection, then try again.");
+  cloudVersions.clear();
+  await supabase.auth.signOut({ scope: "local" });
 }
 
 export default db;

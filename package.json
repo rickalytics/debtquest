@@ -6,9 +6,22 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:ios": "vite build --mode ios && node scripts/ios-privacy.mjs",
+    "ios:sync": "npm run build:ios && cap sync ios",
+    "ios:open": "cap open ios",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "release:check": "node scripts/release-check.mjs",
+    "icons": "node scripts/icons.mjs"
   },
   "dependencies": {
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/filesystem": "^8.1.3",
+    "@capacitor/ios": "^8.5.2",
+    "@capacitor/share": "^8.0.1",
+    "@fontsource/outfit": "^5.3.0",
+    "@fontsource/syne": "^5.3.0",
     "@supabase/supabase-js": "^2.100.0",
     "dexie": "^4.0.11",
     "dexie-react-hooks": "^1.1.7",
@@ -17,10 +30,18 @@
     "recharts": "^2.15.3"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.2",
+    "@playwright/test": "^1.63.0",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
+    "fake-indexeddb": "^6.2.5",
+    "sharp": "^0.35.4",
     "vite": "^6.0.5",
-    "vite-plugin-pwa": "^0.21.1"
+    "vite-plugin-pwa": "^0.21.1",
+    "vitest": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }
