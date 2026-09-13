@@ -1,6 +1,8 @@
-# DebtQuest 🎯
+# DebtQuest
 
-Gamified debt payoff tracker for individuals and couples. React + Vite PWA, with a Capacitor iPhone project.
+A little closer. Together.
+
+A private, social debt payoff journey for individuals, couples, and friends. React + Vite PWA, with a Capacitor iPhone project.
 
 ## Web development
 
@@ -9,6 +11,12 @@ Use Node 22 or newer. Run `npm ci`, then `npm run dev`.
 Copy `.env.example` to `.env.local` for optional cloud mode. Both public Supabase values are needed; otherwise the app stores records on this device with IndexedDB. The Supabase schema is in `supabase/schema.sql`. Cloud writes require a connection and reject stale updates from another current-version client.
 
 `npm run build` produces the PWA plus public `/privacy.html` and `/support.html` pages. Set `VITE_SUPPORT_EMAIL` for the support contact. Fonts are bundled, with no runtime Google Fonts requests.
+
+## Social experience and preview
+
+Open `/?demo=1` to explore an interactive fictional journey. Sample changes are isolated from real tracker storage and cloud accounts. Today, Journey, Circle and Rewards provide daily check-ins, per-day XP, payoff comparisons, invitation-only circles, optional payment wins, encouragement, personal rewards and lifetime milestones.
+
+For real circles, deploy the transactional migration and configure the live project using [SOCIAL.md](docs/SOCIAL.md). The code does not deploy Supabase automatically. Real reporting requires an assigned moderation operator and a monitored support inbox before public launch. Device-only builds remain useful private trackers.
 
 ## iOS
 

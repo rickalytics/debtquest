@@ -19,12 +19,12 @@ Prepared September 13, 2026. This branch prepares the app; it is not a signed or
 
 ## Cloud-only deployment gate
 
-A cloud build must not be submitted before completing these steps:
+A cloud build must not be submitted before completing these steps. Private circles add the deployment and moderation gates in [SOCIAL.md](../SOCIAL.md). Apply the migration there, configure VITE_PUBLIC_APP_URL, and complete two-account acceptance testing before advertising social features.
 
 - Verify the existing `supabase/schema.sql` table, own-user RLS policies, and `ON DELETE CASCADE` foreign key. Do not blindly re-run CREATE POLICY statements on an existing project.
 - Deploy `supabase/functions/delete-account` to that project using the Supabase CLI: `supabase functions deploy delete-account --project-ref YOUR_PROJECT_REF`. The checked-in function config disables gateway JWT verification because the handler validates the caller itself using `auth.getUser(token)` before any action. It also verifies the password. Never remove these checks.
 - The service-role key is used only inside the Edge Function runtime. Supabase provides the SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY environment values there.
-- Test account creation with email confirmation enabled, email delivery, sign-in after confirmation, and account recovery using the configured Supabase email flow. Recovery UX is still the existing email-provider flow; there is no dedicated in-app password-reset screen in this change.
+- Test account creation with email confirmation enabled, email delivery, sign-in after confirmation, and account recovery using the configured Supabase email flow. The sign-in screen provides password reset; the email link opens the canonical web app with a new-password screen. Configure allowed redirect URLs and verify the full flow.
 - With a NEW disposable account, verify deletion removes both the auth user and the corresponding debtquest_data row. Verify missing/invalid tokens and wrong passwords cannot delete records; verify a supplied third-party user ID is ignored.
 - Verify two different users cannot read or change each other's records. Test two devices on the same account: after one saves, the stale device must reject its change and prompt for reload. Cloud mode has no offline write queue or live multi-user merge.
 - Review provider log/backup retention and update the privacy policy if needed. The manifest and App Store disclosures must reflect the actual shipped mode and providers.
@@ -44,14 +44,15 @@ Use fictional records and disposable accounts only.
 - [ ] Cloud sign-in/out, confirmation emails, deletion success/failure, RLS isolation, and stale-device writes tested against the intended backend.
 - [ ] Privacy/support open from both login and Settings; support inbox works; hosted pages are reachable without login.
 - [ ] Larger text, VoiceOver essentials, reduced motion, small iPhone, and iPad compatibility mode checked.
+- [ ] Connected circles: invitations, capacity, progress-only sharing, opt-in amounts, reporting a member or win, blocking/unblocking, revocation, deletion, ownership transfer and an assigned moderation operator verified.
 - [ ] Xcode archive validation/privacy report and TestFlight smoke pass.
 
 ## App Store Connect
 
 - Create the app record under the intended individual/organization account and matching bundle ID.
 - Use LISTING.md for draft metadata and reviewer notes. Capture real iOS screenshots after final device QA; do not submit browser mockups as final store screenshots.
-- Publish this branch's privacy.html and support.html on the EXISTING web host as part of the reviewed web deployment. Enter their actual public HTTPS URLs in App Store Connect. This branch has not deployed those pages.
-- Complete age-rating questionnaire honestly for the shipped features and user-entered reward content. The preloaded suggestive reward wording has been replaced with an ordinary quality-time reward for new profiles; existing saved custom content is preserved.
+- Publish this branch's privacy.html and support.html on the EXISTING web host as part of the reviewed web deployment. Enter their actual public HTTPS URLs in App Store Connect. Confirm the final production deployment; branch preview URLs are not the final App Store support addresses.
+- Complete the age-rating questionnaire for the shipped features, including user-generated display names, shared activity, and private custom reward content. Existing private custom content is preserved.
 - Complete app privacy using PRIVACY.md. Answer encryption/export questions for the final build; Info.plist currently declares no non-exempt encryption because the app uses platform/HTTPS encryption, without custom cryptography. Reassess if dependencies or features change.
 - Supply reviewer contact information and a working demo account for cloud mode; ensure the backend stays available. Local mode needs no login.
 - Choose price and territories. This preparation contains no paid subscription, ad, or in-app purchase implementation. A free first release is assumed in the draft listing.

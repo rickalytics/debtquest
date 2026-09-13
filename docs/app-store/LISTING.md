@@ -2,53 +2,64 @@
 
 Name: DebtQuest
 
-Subtitle: Make debt payoff a team quest
+Subtitle: Less debt. More life. Together.
 
 Primary category: Finance
 
-Keywords: debt,payoff,tracker,budget,couples,progress,payments,goals,motivation
+Keywords: debt,payoff,couples,friends,tracker,goals,progress,budget,habits,motivation
 
 Promotional text:
-Turn your debt payoff progress into a quest. Track balances, log payments, earn badges, and celebrate milestones together.
+A little closer. Together. Turn debt payoff into small daily wins—with your partner, your friends, and a little good energy.
 
 Description:
-DebtQuest helps you stay engaged with your debt payoff plan.
+Your next chapter has a little more freedom in it.
 
-• Track credit cards, auto loans, student loans, mortgages, and other debts.
-• Log payments and see your remaining balances.
-• Explore payoff projections using the rates and payments you enter.
-• Earn XP, build payment streaks, and unlock achievement badges.
-• Create personal rewards to celebrate progress.
-• Export and import backups so you can keep a copy of your records.
+DebtQuest helps you turn a big financial goal into small, visible steps. Track your debt, celebrate your progress, and make the journey feel good along the way.
 
-Designed for individuals and couples who want a more motivating way to track their progress.
+• See the debt you’ve put behind you and the life you’re making room for.
+• Track credit cards, student loans, auto loans, mortgages, and other balances.
+• Log payments you’ve already made and explore your estimated debt-free date.
+• Compare highest-interest and smallest-balance plans. See what a little extra each month could change.
+• Earn points for showing up, regardless of how much you can pay.
+• Celebrate milestones and create personal rewards, from a cozy night in to a free local adventure.
+• Export your records and restore existing DebtQuest backups.
 
-DebtQuest is a manual tracker. It does not connect to your bank, send payments, or provide lending services. Projections are estimates; your lender's statements remain the source of truth. XP and rewards have no cash value.
+For the connected release only, after deployment and acceptance testing:
+• Bring your partner or up to eight friends into a private, invitation-only circle.
+• Share the wins you choose, take on a weekly check-in quest, and send encouragement.
+• Keep balances, debt names, and notes private. Payment amounts are shared only with your explicit choice.
 
-Mode-specific sentence (include only the one matching the final build):
-- Device-only: Your tracker works offline and stores records on your device. Use exported backups to move to a new device.
-- Cloud: Sign in to access the same records across your devices. Cloud mode requires an internet connection; reload before editing on another device.
+No public money leaderboard. No points to buy. No penalty for a missed day. Just a little momentum and your kind of people.
 
-## Screenshot capture plan
+DebtQuest is a manual tracker. It does not connect to your bank, send payments, or provide lending services. Projections are estimates; lender statements remain the source of truth. XP and personal rewards have no monetary value and are not products supplied by DebtQuest.
 
-Capture actual release-candidate iOS UI with fictional data. Use App Store Connect's current required device dimensions. Avoid real personal balances or account names.
+Mode-specific sentence (use only the one shipped):
 
-1. Home: a few fictional debts with visible payoff progress.
-2. Debt detail: payment history and remaining balance.
-3. Projections: payoff comparison with legible labels.
-4. Badges: milestone achievements.
-5. Rewards: default and fictional custom rewards.
+- Device-only: Records stay on your device. Use exported backups to move them. Connected circles are not available in this version.
+- Cloud: Sign in to access your records and private circles. An internet connection is required. Reload before editing on another device.
+
+## Screenshot story
+
+Capture the actual release-candidate iOS app with fictional records and current App Store-required dimensions. Browser preview screenshots are for design review, not final store submission.
+
+1. Today: “A little less debt. A lot more possibility.”
+2. Circle, connected release only: “Your people. Your cheering section.”
+3. Journey: “Meet your debt-free future.”
+4. Daily check-in and team quest: “Small steps count.”
+5. Rewards and milestones: “Enjoy the getting there.”
+
+Use uncluttered UI crops and consistent warm ivory, forest and clay colors. Do not show features from a connected build in device-only release screenshots.
 
 ## Reviewer notes
 
-DebtQuest is a manual personal debt tracker with interactive debt entry, payment history, payoff projections, milestone badges, reward customization, and backup export/import. It does not initiate financial transactions or link bank accounts. XP cannot be bought, transferred, redeemed for money, or exchanged through this app.
+DebtQuest manually tracks debts and payments. It offers payoff illustrations, daily check-ins, lifetime levels, personal rewards, backup import/export, and native haptics/share sheets. It does not move money or link bank accounts. XP cannot be bought, transferred, or redeemed for money.
 
-For cloud mode, insert the disposable reviewer email/password in App Store Connect's private review fields, never in git. Account deletion: Settings → Delete cloud account → current password → type DELETE. Reviewer should use a separate disposable account to test deletion.
+Connected builds add invitation-only circles, structured payment/check-in activity, encouragement, member/activity reporting, blocking, and invitation revocation. Names are filtered and circles use predefined names; no free-form chat or image uploads. Supply a monitored moderation contact and a working disposable reviewer account in App Store Connect's private review fields. Never commit reviewer credentials. Backend services must remain available during review.
 
-For device-only mode, no account is required. Add an account from Home, log a payment from its detail view, and explore Projections, Rewards and Badges. Settings provides backup export/import and data reset.
+Account deletion: Settings → Delete cloud account → current password → type DELETE. Use a disposable account. Circle owners are warned that account deletion also removes owned circles; leaving first transfers ownership.
 
-Native integration: the app bundles its UI for launch without fetching a website, supports device-local storage in local mode, and exports JSON backups through the iOS share sheet.
+For device-only builds, no account is required. Circles show a clear availability explanation and a separately labeled fictional demo. Onboarding leads to Today; add a debt, log a payment, and explore Journey, Circle and Rewards. Settings provides backups and tracker reset.
 
 ## Owner-supplied fields
 
-Support email, public support and privacy URLs, reviewer contact details, copyright owner/seller identity, final territories and pricing. These are intentionally not fabricated.
+Support inbox, public privacy/support URLs, reviewer contact and disposable account, copyright/seller identity, territories, and pricing. A free initial release is assumed; no advertising or purchase implementation is included.

@@ -2,5 +2,9 @@
   "appId": "com.rickalytics.debtquest",
   "appName": "DebtQuest",
   "webDir": "dist",
-  "ios": { "backgroundColor": "#0a0a0f", "contentInset": "never", "preferredContentMode": "mobile" }
+  "ios": {
+    "backgroundColor": "#faf9f5",
+    "contentInset": "never",
+    "preferredContentMode": "mobile"
+  }
 }
