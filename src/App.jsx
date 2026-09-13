@@ -55,13 +55,22 @@ import {
   SafetyDialog,
   SettingsDialog,
 } from "./components/forms.jsx";
+import GameCelebration from "./components/GameCelebration.jsx";
+import { Pip } from "./components/QuestArt.jsx";
+import {
+  claimWeeklyChest,
+  equipCompanion,
+  gameResult,
+  sampleCelebration,
+} from "./lib/game.js";
+import { primeGameAudio } from "./lib/feedback.js";
 import Today from "./pages/Today.jsx";
 import Journey from "./pages/Journey.jsx";
 import Circle from "./pages/Circle.jsx";
 import Rewards from "./pages/Rewards.jsx";
 const navigation = [
-  ["today", "Today", Sun],
-  ["journey", "Journey", Route],
+  ["today", "Quest", Compass],
+  ["journey", "Debts", Route],
   ["circle", "Circle", Users],
   ["rewards", "Rewards", Gift],
 ];
@@ -84,17 +93,17 @@ function CheckinDialog({ circle, checked, onClose, onSave, defaultShare }) {
   const action = useAction();
   return (
     <Dialog
-      title="A small promise. A fresh start."
-      subtitle="Take a breath. Look at your progress. You’re doing something good for future you."
+      title="Ready, player you?"
+      subtitle="A check-in is a quest of its own. Take a moment for your future."
       onClose={onClose}
       busy={action.busy}
     >
       <div className="checkin-affirmation">
-        <Sun size={34} />
+        <Pip mood="celebrate" />
         <p>
-          Today, I’m making room
+          You showed up.
           <br />
-          for a little more freedom.
+          Pip is pretty happy about it.
         </p>
       </div>
       {circle && (
@@ -127,81 +136,6 @@ function CheckinDialog({ circle, checked, onClose, onSave, defaultShare }) {
       <p className="form-help">
         There’s no perfect streak to protect. Come back whenever you can.
       </p>
-    </Dialog>
-  );
-}
-function Celebration({ result, onClose, onCircle }) {
-  return (
-    <Dialog
-      title={
-        result.reward
-          ? "This moment is yours."
-          : result.type === "checkin"
-            ? "You showed up. That matters."
-            : result.paidOff
-              ? "One less thing. A whole lot lighter."
-              : "Look at you moving forward."
-      }
-      onClose={onClose}
-    >
-      <div className="celebration">
-        <div className="celebration-orbit">
-          <i />
-          <i />
-          <i />
-          <i />
-          <span>
-            <Motif
-              name={
-                result.reward
-                  ? result.reward.emoji
-                  : result.type === "checkin"
-                    ? "sun"
-                    : result.paidOff
-                      ? "flag"
-                      : "sparkles"
-              }
-              size={45}
-            />
-          </span>
-        </div>
-        <h3>
-          {result.reward
-            ? result.reward.name
-            : result.type === "checkin"
-              ? "Future you says thank you."
-              : `${money(result.amount, true)} toward your next chapter.`}
-        </h3>
-        <p>
-          {result.reward
-            ? "Make a plan to enjoy it. You earned a little good."
-            : result.shared
-              ? "Your circle has a new reason to cheer you on."
-              : "Another small step toward the life you’re making room for."}
-        </p>
-        {result.points > 0 && (
-          <span className="earned-xp">
-            <Sparkles size={16} />+{result.points} XP earned
-          </span>
-        )}
-        {result.shareFailed && (
-          <p className="inline-error">
-            {result.type === "checkin"
-              ? "Your check-in was saved. Visit your circle’s weekly quest to try sharing it again."
-              : "Your payment was saved. Open the debt’s payment details to try sharing the win again."}
-          </p>
-        )}
-        <Button onClick={onClose}>
-          Keep the good going
-          <ArrowRight size={17} />
-        </Button>
-        {result.shared && (
-          <button className="text-button" onClick={onCircle}>
-            See your circle
-            <Heart size={15} />
-          </button>
-        )}
-      </div>
     </Dialog>
   );
 }
@@ -382,8 +316,10 @@ export default function App() {
   const close = () => setModal(null);
   const openPayment = (selected) => setModal({ type: "payment", selected });
   async function checkin(share) {
-    let points;
-    await commit((d) => {
+    primeGameAudio();
+    let points, before;
+    const saved = await commit((d) => {
+      before = d;
       const result = awardDaily(d, "checkin");
       points = result.points;
       return result.data;
@@ -402,8 +338,31 @@ export default function App() {
     haptic();
     setModal({
       type: "celebrate",
-      result: { type: "checkin", points, shared, shareFailed },
+      result: gameResult(before, saved, {
+        type: "checkin",
+        points,
+        shared,
+        shareFailed,
+      }),
     });
+  }
+  async function openChest() {
+    await action.run(async () => {
+      primeGameAudio();
+      let before;
+      const saved = await commit((d) => {
+        before = d;
+        return claimWeeklyChest(d);
+      });
+      haptic();
+      setModal({
+        type: "celebrate",
+        result: gameResult(before, saved, { type: "chest", points: 40 }),
+      });
+    });
+  }
+  async function onEquip(id) {
+    await commit((d) => equipCompanion(d, id));
   }
   async function onCheer(event, emoji) {
     await action.run(async () => {
@@ -494,6 +453,11 @@ export default function App() {
     onPayment: () => openPayment(),
     onAddDebt: () => setModal({ type: "debt" }),
     onCheckin: () => setModal({ type: "checkin" }),
+    onChest: openChest,
+    onShowcase: () => {
+      primeGameAudio();
+      setModal({ type: "celebrate", result: sampleCelebration(data) });
+    },
     onCheer,
     onSafety: (event, member) => setModal({ type: "safety", event, member }),
     onNavigate: navigate,
@@ -516,7 +480,7 @@ export default function App() {
         >
           <Brand />
         </a>
-        <span className="sidebar-label">YOUR NEXT CHAPTER</span>
+        <span className="sidebar-label">YOUR QUEST LOG</span>
         <nav aria-label="Main navigation">
           {navigation.map(([id, label, Icon]) => (
             <button
@@ -546,7 +510,7 @@ export default function App() {
             <Progress value={level.progress} label="Next level" />
             <small>
               {level.next
-                ? `${Math.max(0, level.next.at - data.journey.lifetimeXP)} XP to your next chapter`
+                ? `${Math.max(0, level.next.at - data.journey.lifetimeXP)} XP to your next level`
                 : "Keep making room for freedom"}
             </small>
           </div>
@@ -587,7 +551,7 @@ export default function App() {
         )}
         <header className="topbar">
           <span className="desktop-breadcrumb">
-            Your next chapter<span>/</span>
+            Freedom Isles<span>/</span>
             {navigation.find((n) => n[0] === tab)[1]}
           </span>
           <a
@@ -651,6 +615,7 @@ export default function App() {
             <Rewards
               data={data}
               busy={busy}
+              onEquip={onEquip}
               onCreate={() => setModal({ type: "reward" })}
               onRedeem={(reward) => setModal({ type: "redeem", reward })}
             />
@@ -767,7 +732,16 @@ export default function App() {
         />
       )}
       {modal?.type === "celebrate" && (
-        <Celebration
+        <GameCelebration
+          key={modal.result.preview ? modal.result.scene : "saved"}
+          busy={busy}
+          onEquip={onEquip}
+          onPreview={(scene) =>
+            setModal({
+              type: "celebrate",
+              result: sampleCelebration(data, scene),
+            })
+          }
           result={modal.result}
           onClose={close}
           onCircle={() => navigate("circle")}
@@ -808,8 +782,11 @@ export default function App() {
             disabled={busy}
             onClick={() =>
               action.run(async () => {
+                primeGameAudio();
                 const reward = modal.reward;
-                await commit((d) => {
+                let before;
+                const saved = await commit((d) => {
+                  before = d;
                   if (d.xp < reward.cost)
                     throw new Error(
                       "Keep going — you need a few more points for this one.",
@@ -829,7 +806,10 @@ export default function App() {
                   };
                 });
                 haptic();
-                setModal({ type: "celebrate", result: { reward } });
+                setModal({
+                  type: "celebrate",
+                  result: gameResult(before, saved, { reward }),
+                });
               })
             }
           >

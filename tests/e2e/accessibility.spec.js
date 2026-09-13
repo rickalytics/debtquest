@@ -5,9 +5,9 @@ test("core phone screens have accessible names, roles, and text contrast", async
 }) => {
   await page.goto("/?demo=1");
   await expect(
-    page.getByRole("heading", { name: /You’re going places/ }),
+    page.getByRole("heading", { name: /Your next adventure/ }),
   ).toBeVisible();
-  for (const name of ["Today", "Journey", "Circle", "Rewards"]) {
+  for (const name of ["Quest", "Debts", "Circle", "Rewards"]) {
     await page
       .getByRole("navigation", { name: "Mobile navigation" })
       .getByRole("button", { name, exact: true })

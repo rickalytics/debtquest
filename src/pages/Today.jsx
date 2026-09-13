@@ -1,30 +1,73 @@
+import { useState } from "react";
 import {
   ArrowRight,
-  ArrowUpRight,
-  Plus,
   Check,
-  ShieldCheck,
-  Sparkles,
-  Flame,
   ChevronRight,
+  LockKeyhole,
+  Plus,
+  Sparkles,
+  Star,
+  Flag,
+  Flame,
+  Heart,
+  Play,
 } from "lucide-react";
 import {
   Button,
   Progress,
-  SectionTitle,
-  DailyTask,
+  Dialog,
   Motif,
+  SectionTitle,
 } from "../components/ui.jsx";
-import JourneyArt from "../components/JourneyArt.jsx";
+import { Pip, Chest, IslandWorld } from "../components/QuestArt.jsx";
 import { CircleFeed, WeekChallenge } from "../components/CircleFeed.jsx";
-import {
-  dayKey,
-  weekDays,
-  totals,
-  money,
-  projectPayoff,
-  payoffLabel,
-} from "../lib/journey.js";
+import { dayKey, levelOf, money, totals, weekDays } from "../lib/journey.js";
+import { COMPANION_STYLES, companionStyle, weeklyQuest } from "../lib/game.js";
+import { isDemo } from "../lib/demo.js";
+
+const positions = [
+  [28.6, 72.6],
+  [51.7, 63.1],
+  [32.3, 43.6],
+  [58.8, 36.2],
+  [58.8, 18.5],
+];
+function QuestTask({
+  icon: Icon,
+  title,
+  description,
+  points,
+  done,
+  onClick,
+  busy,
+}) {
+  return (
+    <button
+      className={`quest-task ${done ? "done" : ""}`}
+      onClick={onClick}
+      aria-label={title}
+      disabled={done || busy}
+    >
+      <span className="quest-task-icon">
+        <Icon size={22} />
+      </span>
+      <span>
+        <strong>{title}</strong>
+        <small>{description}</small>
+      </span>
+      <span className="quest-task-prize">
+        {done ? (
+          <Check size={22} />
+        ) : (
+          <>
+            <b>+{points}</b>
+            <small>XP</small>
+          </>
+        )}
+      </span>
+    </button>
+  );
+}
 export default function Today({
   data,
   circle,
@@ -39,215 +82,284 @@ export default function Today({
   onNavigate,
   challengeEvents,
   busy,
+  onChest,
+  onShowcase,
 }) {
-  const summary = totals(data),
+  const [selected, setSelected] = useState(null),
+    [greeting, setGreeting] = useState(false);
+  const level = levelOf(data),
+    summary = totals(data),
     checked = data.journey.checkins.includes(dayKey()),
-    days = weekDays(),
-    weekCount = days.filter((d) =>
-      data.journey.checkins.includes(d.key),
-    ).length,
-    projection = projectPayoff(data.accounts);
+    quest = weeklyQuest(data),
+    look = companionStyle(data);
+  const active =
+    COMPANION_STYLES.filter((s) => s.at <= data.journey.lifetimeXP).length - 1;
+  const canPay = data.accounts.some((a) => a.currentBalance > 0);
+  const paidToday = data.journey.paymentDays.includes(dayKey());
+  const cheered = data.journey.cheerDays.includes(dayKey());
+  const tasksDone = Number(checked) + Number(paidToday) + Number(cheered);
   return (
     <>
-      <div className="page-heading">
+      <div className="page-heading quest-heading">
         <div>
-          <span className="eyebrow">A LITTLE CLOSER, EVERY DAY</span>
+          <span className="eyebrow">SMALL STEPS. EPIC PROGRESS.</span>
           <h1>
-            You’re going places, {data.journey.name || "friend"}
-            <span className="clay-text">.</span>
+            Your next adventure, {data.journey.name || "friend"}
+            <span>.</span>
           </h1>
-          <p>Your future has a little more freedom in it.</p>
+          <p>A little less debt. A whole new world.</p>
         </div>
-        <Button
-          onClick={
-            data.accounts.some((a) => a.currentBalance > 0)
-              ? onPayment
-              : onAddDebt
-          }
-        >
-          <Plus size={18} />
-          {data.accounts.some((a) => a.currentBalance > 0)
+        <Button onClick={canPay ? onPayment : onAddDebt}>
+          <Plus size={19} />
+          {canPay
             ? "Log a payment"
-            : "Add your first debt"}
+            : data.accounts.length
+              ? "Add a debt"
+              : "Add your first debt"}
         </Button>
       </div>
-      <div className="today-grid">
-        <section className="freedom-hero">
-          <div className="hero-copy">
-            <span className="hero-eyebrow">
-              <span /> YOUR FREEDOM FUND
-            </span>
-            <h2>
-              {summary.original > 0
-                ? "Look how far you’ve come."
-                : "This is where your next chapter begins."}
-            </h2>
-            <div className="hero-amount">
-              {money(summary.cleared)}
-              <span>of debt, behind you</span>
+      <div className="quest-layout">
+        <section className="quest-world-card" aria-label="Your quest world">
+          <div className="world-card-heading">
+            <div>
+              <span className="eyebrow">YOUR ADVENTURE MAP</span>
+              <h2>Freedom Isles</h2>
             </div>
-            <div className="hero-progress">
-              <div>
-                <strong>
-                  {Math.round(summary.percent)}% closer to freedom
-                </strong>
-                <span>{money(summary.original)} starting debt</span>
-              </div>
-              <Progress value={summary.percent} label="Starting debt cleared" />
-            </div>
-            <button className="hero-link" onClick={() => onNavigate("journey")}>
-              See your journey
-              <ArrowUpRight size={17} />
-            </button>
-          </div>
-          <div className="hero-illustration">
-            <JourneyArt />
-            <div className="destination-tag">
-              <span>THE NEXT CHAPTER</span>
-              <strong>{data.journey.why}</strong>
-              <Sparkles size={15} />
-            </div>
-          </div>
-        </section>
-        <section className="checkin-card">
-          <div className="card-topline">
-            <span className="eyebrow">A PROMISE TO YOURSELF</span>
-            <span className="icon-tile peach">
-              <Flame size={20} />
+            <span className="world-level">
+              <Star size={15} fill="currentColor" />
+              LEVEL {level.index}
             </span>
           </div>
-          <h2>Just keep showing up.</h2>
-          <p>You don’t have to make a payment to make progress.</p>
-          <div className="week-dots">
-            {days.map((d) => (
-              <div className={d.today ? "today" : ""} key={d.key}>
-                <span>{d.label}</span>
-                <span
-                  className={`day-circle ${data.journey.checkins.includes(d.key) ? "done" : ""} ${d.future ? "future" : ""}`}
-                  role="img"
-                  aria-label={`${d.key}${data.journey.checkins.includes(d.key) ? ", checked in" : ""}`}
-                >
-                  {data.journey.checkins.includes(d.key) ? (
-                    <Check size={15} />
-                  ) : d.today ? (
-                    <span />
+          <div className="world-stage">
+            <IslandWorld />
+            <div className="world-chapter">
+              <span className="live-spark" /> {COMPANION_STYLES[active].island}
+              <small>{active + 1} / 5 islands unlocked</small>
+            </div>
+            {COMPANION_STYLES.map((style, i) => (
+              <button
+                key={style.id}
+                className={`world-node ${i <= active ? "unlocked" : "locked"} ${i === active ? "current" : ""}`}
+                style={{
+                  left: positions[i][0] + "%",
+                  top: positions[i][1] + "%",
+                }}
+                onClick={() => setSelected(style)}
+                aria-label={`${style.island}, ${i <= active ? "unlocked" : `unlocks at ${style.at} lifetime XP`}`}
+              >
+                <span>
+                  {i < active ? (
+                    <Check size={25} />
+                  ) : i === active ? (
+                    <Star size={27} fill="currentColor" />
                   ) : (
-                    "·"
+                    <LockKeyhole size={21} />
                   )}
                 </span>
-              </div>
+                <small hidden={i !== active && i !== active + 1}>
+                  {i === active
+                    ? "YOU ARE HERE"
+                    : i === active + 1
+                      ? "UP NEXT"
+                      : i + 1}
+                </small>
+              </button>
             ))}
+            <button
+              className={`world-companion ${greeting ? "greeting" : ""}`}
+              onClick={() => setGreeting(!greeting)}
+              aria-label="Say hello to Pip"
+              aria-pressed={greeting}
+            >
+              <span className="pip-speech">
+                {greeting
+                  ? "You + me. We've got this!"
+                  : "Ready for our next quest?"}
+              </span>
+              <Pip look={look.id} mood={greeting ? "celebrate" : "happy"} />
+              <span className="pip-name">PIP · YOUR QUEST BUDDY</span>
+            </button>
+            <div className="world-caption">
+              <Flag size={14} />
+              <span>{data.journey.why}</span>
+            </div>
           </div>
-          <Button
-            variant={checked ? "soft" : "primary"}
-            disabled={checked || busy}
-            onClick={onCheckin}
-          >
-            {checked ? (
-              <>
-                <Check size={17} />
-                You showed up today
-              </>
-            ) : (
-              <>
-                I’m here for future me <span className="button-xp">+25 XP</span>
-              </>
-            )}
-          </Button>
-          <small>
-            {weekCount
-              ? `${weekCount} day${weekCount === 1 ? "" : "s"} of showing up this week. That counts.`
-              : "One small step is all it takes."}
-          </small>
-        </section>
-        <section className="daily-card panel">
-          <SectionTitle
-            eyebrow="LITTLE THINGS ADD UP"
-            title="Your next good move"
-          />
-          <DailyTask
-            icon="footprints"
-            title="Give your progress a little nudge"
-            description="Record a payment you’ve already made."
-            points={50}
-            done={data.journey.paymentDays.includes(dayKey())}
-            onClick={
-              data.accounts.some((a) => a.currentBalance > 0)
-                ? onPayment
-                : onAddDebt
-            }
-          />
-          <DailyTask
-            icon="heart"
-            title="Be someone’s good energy"
-            description="Send a little encouragement to your circle."
-            points={15}
-            done={data.journey.cheerDays.includes(dayKey())}
-            onClick={() => onNavigate("circle")}
-          />
-          <button className="plan-nudge" onClick={() => onNavigate("journey")}>
-            <span className="icon-tile sage">
-              <Motif name="compass" size={22} />
-            </span>
-            <span>
-              <strong>Your freedom has a timeline.</strong>
-              <small>
-                {data.accounts.length
-                  ? `${payoffLabel(projection.months)} · Explore what’s possible`
-                  : "Add a debt to find your starting point"}
-              </small>
-            </span>
-            <ChevronRight size={18} />
-          </button>
-          <div className="quiet-note">
-            <ShieldCheck size={14} />
-            Your pace. Your progress. No comparison needed.
-          </div>
-        </section>
-        {circle ? (
-          <WeekChallenge
-            events={challengeEvents}
-            members={members}
-            onCheckin={onCheckin}
-            checked={challengeEvents.some(
-              (e) =>
-                e.userId === viewerId &&
-                e.kind === "checkin" &&
-                dayKey(new Date(e.createdAt)) === dayKey(),
-            )}
-            busy={busy}
-          />
-        ) : (
-          <section className="circle-invite-card">
-            <span className="icon-tile peach">
-              <Motif name="users" size={24} />
-            </span>
-            <h2>
-              Good company.
-              <br />
-              Better momentum.
-            </h2>
+          <div className="world-progress">
+            <div>
+              <span>
+                <strong>
+                  {level.next
+                    ? `${level.next.at - data.journey.lifetimeXP} XP`
+                    : "All islands unlocked"}
+                </strong>
+                {level.next
+                  ? ` to ${COMPANION_STYLES[active + 1].island}`
+                  : " · keep your adventure going"}
+              </span>
+              <span>
+                {data.journey.lifetimeXP.toLocaleString()} lifetime XP
+              </span>
+            </div>
+            <Progress value={level.progress} label="Next island progress" />
             <p>
-              Bring your partner or a few friends. Celebrate the steps, without
-              sharing your balances.
+              {level.next
+                ? `Next unlock: ${COMPANION_STYLES[active + 1].name}. Every kind of progress counts.`
+                : "Your islands stay unlocked when you spend reward points."}
             </p>
-            <Button variant="secondary" onClick={() => onNavigate("circle")}>
-              Find your people
-              <ArrowRight size={17} />
+          </div>
+          {isDemo && (
+            <button className="showcase-link" onClick={onShowcase}>
+              <Play size={14} fill="currentColor" />
+              Try a payment celebration<span>Sample only</span>
+            </button>
+          )}
+        </section>
+        <div className="quest-sidebar">
+          <section className="daily-quests-card">
+            <div className="quest-section-head">
+              <div>
+                <span className="eyebrow">YOUR DAILY QUESTS</span>
+                <h2>Let's make a little magic.</h2>
+              </div>
+              <span className="quest-counter">{tasksDone}/3</span>
+            </div>
+            <QuestTask
+              icon={Flame}
+              title={checked ? "You showed up today" : "I’m here for future me"}
+              description="One check-in. A little momentum."
+              points={25}
+              done={checked}
+              onClick={onCheckin}
+              busy={busy}
+            />
+            <QuestTask
+              icon={Flag}
+              title={
+                paidToday
+                  ? "Payment quest complete"
+                  : "Put a little debt behind you"
+              }
+              description="Log a payment you've already made."
+              points={50}
+              done={paidToday}
+              onClick={canPay ? onPayment : onAddDebt}
+              busy={busy}
+            />
+            <QuestTask
+              icon={Heart}
+              title={
+                cheered
+                  ? "Good energy delivered"
+                  : "Be someone's cheering section"
+              }
+              description="Encourage a win in your circle."
+              points={15}
+              done={cheered}
+              onClick={() => onNavigate("circle")}
+              busy={busy}
+            />
+            <p className="quest-fineprint">
+              Check in without paying. Payment quests can wait until it fits
+              your plan.
+            </p>
+          </section>
+          <section
+            className={`weekly-chest-card ${quest.ready ? "ready" : ""}`}
+          >
+            <div className="weekly-chest-copy">
+              <span className="eyebrow">THE CONSISTENCY CHEST</span>
+              <h2>
+                {quest.claimed
+                  ? "A week worth celebrating."
+                  : quest.ready
+                    ? "Your chest is ready!"
+                    : "Three days. One little treasure."}
+              </h2>
+              <p>
+                {quest.claimed
+                  ? "+40 XP collected. Your next chest starts Monday."
+                  : "Check in on 3 different days this week. Unlock a guaranteed 40 XP."}
+              </p>
+            </div>
+            <Chest open={quest.claimed} />
+            <div className="quest-week">
+              {weekDays().map((d) => (
+                <span
+                  key={d.key}
+                  className={`${data.journey.checkins.includes(d.key) ? "done" : ""} ${d.today ? "today" : ""}`}
+                  aria-label={`${d.key}, ${data.journey.checkins.includes(d.key) ? "checked in" : "not checked in"}`}
+                >
+                  <small>{d.label}</small>
+                  <i>
+                    {data.journey.checkins.includes(d.key) ? (
+                      <Check size={15} />
+                    ) : (
+                      "·"
+                    )}
+                  </i>
+                </span>
+              ))}
+            </div>
+            <Button
+              variant={quest.ready ? "primary" : "soft"}
+              disabled={!quest.ready || busy}
+              onClick={onChest}
+            >
+              {quest.claimed ? (
+                <>
+                  <Check size={17} />
+                  Chest collected
+                </>
+              ) : quest.ready ? (
+                <>
+                  Open chest <span className="button-xp">+40 XP</span>
+                </>
+              ) : (
+                <>
+                  <LockKeyhole size={15} />
+                  {Math.min(quest.count, 3)} of 3 check-in days
+                </>
+              )}
             </Button>
           </section>
-        )}
-        <section className="today-feed panel">
+        </div>
+        <section className="real-progress-card">
+          <div className="real-progress-icon">
+            <Flag size={27} />
+          </div>
+          <div>
+            <span className="eyebrow">YOUR REAL-WORLD WIN</span>
+            <h2>
+              {summary.original
+                ? `${money(summary.cleared)} of debt cleared`
+                : "Your first chapter is waiting"}
+            </h2>
+            <p>
+              {summary.original
+                ? `${Math.round(summary.percent)}% of your starting debt · ${data.accounts.filter((a) => a.isPaidOff).length} debts paid off`
+                : "Add a debt to connect this adventure to your progress."}
+            </p>
+          </div>
+          <button className="text-button" onClick={() => onNavigate("journey")}>
+            Your debts
+            <ChevronRight size={17} />
+          </button>
+        </section>
+        <section className="quest-party panel">
           <SectionTitle
-            eyebrow="PROGRESS IS BETTER SHARED"
-            title="A little good news"
+            eyebrow="YOUR PARTY'S LATEST WINS"
+            title={
+              circle
+                ? "Your party is making moves."
+                : "Every quest is better together."
+            }
             action={
               <button
                 className="text-button"
                 onClick={() => onNavigate("circle")}
               >
                 Your circle
-                <ArrowRight size={15} />
+                <ArrowRight size={16} />
               </button>
             }
           />
@@ -261,16 +373,51 @@ export default function Today({
             compact
           />
         </section>
-        <aside className="quote-card">
-          <span className="quote-spark">✳</span>
-          <blockquote>
-            “We’re not just paying things off. We’re making room for what’s
-            next.”
-          </blockquote>
-          <span>YOUR NEXT CHAPTER IS WORTH IT</span>
-          <div className="quote-line" />
-        </aside>
+        {circle && (
+          <WeekChallenge
+            events={challengeEvents}
+            members={members}
+            onCheckin={onCheckin}
+            checked={challengeEvents.some(
+              (e) =>
+                e.userId === viewerId &&
+                e.kind === "checkin" &&
+                dayKey(new Date(e.createdAt)) === dayKey(),
+            )}
+            busy={busy}
+          />
+        )}
       </div>
+      {selected && (
+        <Dialog title={selected.island} onClose={() => setSelected(null)}>
+          <div className="island-detail">
+            <Pip look={selected.id} />
+            <span className="island-unlock-label">
+              {selected.at <= data.journey.lifetimeXP
+                ? "UNLOCKED"
+                : `${selected.at - data.journey.lifetimeXP} MORE LIFETIME XP`}
+            </span>
+            <h3>{selected.name}</h3>
+            <p>{selected.detail}</p>
+            <p>
+              {selected.at <= data.journey.lifetimeXP
+                ? "This look is yours to keep. Equip it in Rewards."
+                : "Check-ins, payment days, encouragement, and weekly chests all move you forward."}
+            </p>
+            <Button
+              onClick={() => {
+                setSelected(null);
+                onNavigate("rewards");
+              }}
+            >
+              {selected.at <= data.journey.lifetimeXP
+                ? "Visit your collection"
+                : "See the unlocks"}
+              <ArrowRight size={17} />
+            </Button>
+          </div>
+        </Dialog>
+      )}
     </>
   );
 }

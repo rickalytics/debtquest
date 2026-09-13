@@ -14,7 +14,7 @@ async function onboard(page) {
     .getByRole("button", { name: "Start my journey", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: /You’re going places, Taylor/ }),
+    page.getByRole("heading", { name: /Your next adventure, Taylor/ }),
   ).toBeVisible();
 }
 test("mobile journey: onboarding, debt, payment, durable reload, backup, privacy", async ({
@@ -43,9 +43,9 @@ test("mobile journey: onboarding, debt, payment, durable reload, backup, privacy
     .fill("A little breathing room");
   await page.getByRole("button", { name: "Log payment", exact: true }).click();
   await expect(page.getByText("+50 XP earned")).toBeVisible();
-  await page.getByRole("button", { name: "Keep the good going" }).click();
+  await page.getByRole("button", { name: "Continue quest" }).click();
   await page.reload();
-  await nav(page, "Journey").click();
+  await nav(page, "Debts").click();
   await expect(page.getByRole("button", { name: /Test Car/ })).toContainText(
     "$8,500.00",
   );
@@ -68,7 +68,10 @@ test("mobile journey: onboarding, debt, payment, durable reload, backup, privacy
     .getByRole("link", { name: "Help & support" })
     .click();
   await expect(
-    page.getByRole("heading", { name: "We've got your next step.", exact: true }),
+    page.getByRole("heading", {
+      name: "We've got your next step.",
+      exact: true,
+    }),
   ).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -79,7 +82,7 @@ test("the sample circle is interactive, private, and isolated from real tracker 
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/?demo=1");
   await expect(
-    page.getByRole("heading", { name: /You’re going places, Alex/ }),
+    page.getByRole("heading", { name: /Your next adventure, Alex/ }),
   ).toBeVisible();
   expect(
     await page.evaluate(async () =>
@@ -112,7 +115,7 @@ test("the sample circle is interactive, private, and isolated from real tracker 
   await expect(
     page.getByRole("heading", { name: "This moment is yours." }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Keep the good going" }).click();
+  await page.getByRole("button", { name: "Continue quest" }).click();
   await expect(
     page.getByRole("heading", { name: "Moments you’ve made room for" }),
   ).toBeVisible();
@@ -131,7 +134,7 @@ test("the sample circle is interactive, private, and isolated from real tracker 
   await expect(
     page.getByRole("button", { name: "Manage activity from Sam", exact: true }),
   ).toHaveCount(0);
-  for (const name of ["Today", "Journey", "Circle", "Rewards"]) {
+  for (const name of ["Quest", "Debts", "Circle", "Rewards"]) {
     await nav(page, name).click();
     await page.setViewportSize({ width: 320, height: 750 });
     expect(
@@ -149,23 +152,21 @@ test("a malformed journey backup cannot replace saved personal data", async ({
 }) => {
   await onboard(page);
   await page.getByRole("button", { name: "Settings", exact: true }).click();
-  await page
-    .locator("input[type=file]")
-    .setInputFiles({
-      name: "invalid.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(
-        JSON.stringify({
-          accounts: [],
-          payments: [],
-          journey: { checkins: {} },
-        }),
-      ),
-    });
+  await page.locator("input[type=file]").setInputFiles({
+    name: "invalid.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(
+      JSON.stringify({
+        accounts: [],
+        payments: [],
+        journey: { checkins: {} },
+      }),
+    ),
+  });
   await expect(page.getByText(/Invalid DebtQuest backup/)).toBeVisible();
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: /You’re going places, Taylor/ }),
+    page.getByRole("heading", { name: /Your next adventure, Taylor/ }),
   ).toBeVisible();
 });
 test("check-ins award once per day and a custom circle can be created in the demo", async ({
@@ -179,7 +180,7 @@ test("check-ins award once per day and a custom circle can be created in the dem
     .getByRole("button", { name: /I’m here for future me/ })
     .click();
   await expect(page.getByText("+25 XP earned")).toBeVisible();
-  await page.getByRole("button", { name: "Keep the good going" }).click();
+  await page.getByRole("button", { name: "Continue quest" }).click();
   await expect(
     page.getByRole("button", { name: "You showed up today" }),
   ).toBeDisabled();

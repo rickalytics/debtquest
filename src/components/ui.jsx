@@ -110,7 +110,14 @@ export function Field({ label, hint, children, ...props }) {
     </label>
   );
 }
-export function Dialog({ title, subtitle, onClose, children, busy = false }) {
+export function Dialog({
+  title,
+  subtitle,
+  onClose,
+  children,
+  busy = false,
+  className = "",
+}) {
   const ref = useRef();
   useEffect(() => {
     const previous = document.activeElement;
@@ -120,7 +127,7 @@ export function Dialog({ title, subtitle, onClose, children, busy = false }) {
   return (
     <dialog
       ref={ref}
-      className="dialog"
+      className={`dialog ${className}`}
       aria-label={title}
       onCancel={(e) => {
         e.preventDefault();

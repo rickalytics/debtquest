@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { signInWithPassword, signUpWithPassword } from "../db.js";
 import { Brand, Button, Field, InlineError, useAction } from "./ui.jsx";
-import JourneyArt from "./JourneyArt.jsx";
+import { Pip } from "./QuestArt.jsx";
 import { supabase } from "../supabaseClient.js";
 import { LegalLinks } from "../Legal.jsx";
 export function Auth() {
@@ -26,15 +26,15 @@ export function Auth() {
         <div>
           <span className="eyebrow">GOOD THINGS ARE AHEAD</span>
           <h1>
-            A little closer.
+            Less debt.
             <br />
-            <em>Together.</em>
+            <em>More adventure.</em>
           </h1>
           <p>
-            Turn paying off debt into a journey worth sharing. Your goals. Your
-            people. A little more freedom every day.
+            Turn everyday progress into an adventure. Complete quests, unlock a
+            world, and cheer your people toward a little more freedom.
           </p>
-          <JourneyArt className="welcome-art" />
+          <Pip className="welcome-art" mood="celebrate" />
         </div>
         <span className="welcome-foot">
           <ShieldCheck size={17} /> Your balances stay yours.
@@ -169,15 +169,15 @@ export function Onboarding({ data, commit }) {
       <Brand />
       <div className="onboarding-card">
         <div className="onboarding-art">
-          <JourneyArt />
+          <Pip mood="celebrate" />
         </div>
-        <span className="eyebrow">YOUR NEXT CHAPTER · {step + 1} OF 2</span>
+        <span className="eyebrow">PLAYER SETUP · {step + 1} OF 2</span>
         <h1>
           {step === 0 ? (
             <>
-              Freedom looks
+              Your freedom quest
               <br />
-              good on you.
+              starts here.
             </>
           ) : (
             <>
@@ -189,7 +189,7 @@ export function Onboarding({ data, commit }) {
         </h1>
         <p>
           {step === 0
-            ? "Let’s make this journey yours. You can bring your people along whenever you’re ready."
+            ? "Meet Pip, your little adventure buddy. Pick your player name. Bring your people along when you’re ready."
             : "Debt payoff is the path. This is your reason to keep going."}
         </p>
         <form

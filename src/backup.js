@@ -96,7 +96,14 @@ export function validateData(raw) {
       !["solo", "couple", "friends"].includes(j.style)
     )
       fail();
-    for (const key of ["checkins", "cheerDays", "paymentDays"]) {
+    if (
+      j.companionStyle !== undefined &&
+      !["classic", "scarf", "cape", "lantern", "crown"].includes(
+        j.companionStyle,
+      )
+    )
+      fail();
+    for (const key of ["checkins", "cheerDays", "paymentDays", "questChests"]) {
       if (
         j[key] !== undefined &&
         (!Array.isArray(j[key]) ||

@@ -14,7 +14,7 @@ Copy `.env.example` to `.env.local` for optional cloud mode. Both public Supabas
 
 ## Social experience and preview
 
-Open `/?demo=1` to explore an interactive fictional journey. Sample changes are isolated from real tracker storage and cloud accounts. Today, Journey, Circle and Rewards provide daily check-ins, per-day XP, payoff comparisons, invitation-only circles, optional payment wins, encouragement, personal rewards and lifetime milestones.
+Open `/?demo=1` to explore an interactive fictional journey. Sample changes are isolated from real tracker storage and cloud accounts. Quest, Debts, Circle and Rewards connect an illustrated adventure map, Pip companion unlocks, saved payment celebrations, daily quests, weekly consistency chests, payoff comparisons, invitation-only circles and personal rewards. See [the game loop](docs/GAMEPLAY.md) for progression and reward rules.
 
 For real circles, deploy the transactional migration and configure the live project using [SOCIAL.md](docs/SOCIAL.md). The code does not deploy Supabase automatically. Real reporting requires an assigned moderation operator and a monitored support inbox before public launch. Device-only builds remain useful private trackers.
 

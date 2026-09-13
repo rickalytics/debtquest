@@ -12,16 +12,16 @@ Prepared September 13, 2026 from the release branch's source, schema, and deleti
 | Purpose for the data below                    | App Functionality: accounts, saved progress, social features, support, and abuse prevention. |
 | Advertising, marketing, analytics purposes    | None in the current implementation. There is no analytics or advertising SDK.                |
 
-| Apple data type                       | DebtQuest information                                                             | Linked to user | Tracking |
-| ------------------------------------- | --------------------------------------------------------------------------------- | -------------- | -------- |
-| Contact Info → Name                   | Profile and circle display names                                                  | Yes            | No       |
-| Contact Info → Email Address          | Authentication and support contact                                                | Yes            | No       |
-| Identifiers → User ID                 | Supabase account ID, circle membership associations                               | Yes            | No       |
-| Financial Info → Other Financial Info | Manual balances, APRs, minimums, payment records, optional shared payment amounts | Yes            | No       |
-| User Content → Other User Content     | Goals, private notes, reward plans, structured shared activity                    | Yes            | No       |
-| User Content → Customer Support       | In-app member/activity reports and support correspondence                         | Yes            | No       |
-| User Content → Gameplay Content       | Saved XP, levels, milestones, and reward progress in the gamified journey         | Yes            | No       |
-| Usage Data → Product Interaction      | Check-ins, payment-win sharing, and encouragement events                          | Yes            | No       |
+| Apple data type                       | DebtQuest information                                                                                           | Linked to user | Tracking |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------------- | -------- |
+| Contact Info → Name                   | Profile and circle display names                                                                                | Yes            | No       |
+| Contact Info → Email Address          | Authentication and support contact                                                                              | Yes            | No       |
+| Identifiers → User ID                 | Supabase account ID, circle membership associations                                                             | Yes            | No       |
+| Financial Info → Other Financial Info | Manual balances, APRs, minimums, payment records, optional shared payment amounts                               | Yes            | No       |
+| User Content → Other User Content     | Goals, private notes, reward plans, structured shared activity                                                  | Yes            | No       |
+| User Content → Customer Support       | In-app member/activity reports and support correspondence                                                       | Yes            | No       |
+| User Content → Gameplay Content       | Saved XP, levels, milestones, weekly chest claims, companion looks, and reward progress in the gamified journey | Yes            | No       |
+| Usage Data → Product Interaction      | Check-ins, payment-win sharing, and encouragement events                                                        | Yes            | No       |
 
 Customer Support is included conservatively rather than relying on Apple's optional-disclosure exception. Gameplay Content is included for saved game-like progress; Product Interaction covers actions. The cloud privacy-manifest generator includes both. These are classification judgments based on the app's behavior, not an Apple ruling.
 

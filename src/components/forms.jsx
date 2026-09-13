@@ -51,6 +51,8 @@ import {
   DEFAULT_REWARDS,
 } from "../db.js";
 import { LegalLinks } from "../Legal.jsx";
+import { gameResult } from "../lib/game.js";
+import { primeGameAudio } from "../lib/feedback.js";
 import { Share } from "@capacitor/share";
 import { Capacitor } from "@capacitor/core";
 const types = [
@@ -256,8 +258,8 @@ export function PaymentForm({
   const set = (key, value) => setForm((f) => ({ ...f, [key]: value }));
   return (
     <Dialog
-      title="A little more freedom."
-      subtitle="Every payment is a step forward. Let’s mark this one."
+      title="Log your next win."
+      subtitle="Big or small, every payment deserves a moment."
       onClose={onClose}
       busy={action.busy}
     >
@@ -265,8 +267,10 @@ export function PaymentForm({
         onSubmit={(e) => {
           e.preventDefault();
           action.run(async () => {
-            let result;
+            primeGameAudio();
+            let result, before;
             const saved = await commit((d) => {
+              before = d;
               result = recordPayment(d, {
                 ...form,
                 amount: Number(form.amount),
@@ -290,12 +294,15 @@ export function PaymentForm({
                 shareFailed = true;
               }
             }
-            onSuccess({
-              ...result,
-              shared,
-              shareFailed,
-              amount: Number(form.amount),
-            });
+            onSuccess(
+              gameResult(before, saved, {
+                ...result,
+                type: "payment",
+                shared,
+                shareFailed,
+                amount: Number(form.amount),
+              }),
+            );
           });
         }}
       >

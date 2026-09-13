@@ -61,6 +61,8 @@ export function normalizeJourney(data) {
       checkins: [],
       cheerDays: [],
       paymentDays: [],
+      questChests: [],
+      companionStyle: "classic",
       name: legacyName && legacyName !== "Player 1" ? legacyName : "",
       why: "More room to breathe",
       shareWins: false,

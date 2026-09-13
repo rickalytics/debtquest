@@ -9,18 +9,21 @@ Primary category: Finance
 Keywords: debt,payoff,couples,friends,tracker,goals,progress,budget,habits,motivation
 
 Promotional text:
-A little closer. Together. Turn debt payoff into small daily wins—with your partner, your friends, and a little good energy.
+Turn debt payoff into an adventure. Meet Pip, complete daily quests, unlock new islands, and celebrate each payment—with your favorite people cheering you on.
 
 Description:
-Your next chapter has a little more freedom in it.
+Small steps. Epic progress.
 
-DebtQuest helps you turn a big financial goal into small, visible steps. Track your debt, celebrate your progress, and make the journey feel good along the way.
+Meet Pip, your little companion on a quest toward financial freedom. Turn everyday progress into an adventure with daily quests, unlockable islands, and celebrations for the debt you put behind you.
 
 • See the debt you’ve put behind you and the life you’re making room for.
 • Track credit cards, student loans, auto loans, mortgages, and other balances.
 • Log payments you’ve already made and explore your estimated debt-free date.
 • Compare highest-interest and smallest-balance plans. See what a little extra each month could change.
-• Earn points for showing up, regardless of how much you can pay.
+• Complete daily quests for check-ins, payment days, and encouragement.
+• Unlock the Freedom Isles and new looks for Pip with lifetime XP.
+• Check in on three days in a week to open a guaranteed XP chest.
+• Watch each saved payment become a win, from a small step to a full debt payoff.
 • Celebrate milestones and create personal rewards, from a cozy night in to a free local adventure.
 • Export your records and restore existing DebtQuest backups.
 
@@ -42,23 +45,24 @@ Mode-specific sentence (use only the one shipped):
 
 Capture the actual release-candidate iOS app with fictional records and current App Store-required dimensions. Browser preview screenshots are for design review, not final store submission.
 
-1. Today: “A little less debt. A lot more possibility.”
+1. Quest map: “Small steps. Epic progress.”
 2. Circle, connected release only: “Your people. Your cheering section.”
-3. Journey: “Meet your debt-free future.”
-4. Daily check-in and team quest: “Small steps count.”
-5. Rewards and milestones: “Enjoy the getting there.”
+3. Payment celebration: “Every payment deserves a win.”
+4. Daily quests and weekly chest: “Showing up is a quest of its own.”
+5. Pip collection and rewards: “A little Pip. A lot of personality.”
+6. Debts: “Meet your debt-free future.”
 
-Use uncluttered UI crops and consistent warm ivory, forest and clay colors. Do not show features from a connected build in device-only release screenshots.
+Use uncluttered UI crops and consistent ivory, lavender, mint and gold colors. Do not show features from a connected build in device-only release screenshots.
 
 ## Reviewer notes
 
-DebtQuest manually tracks debts and payments. It offers payoff illustrations, daily check-ins, lifetime levels, personal rewards, backup import/export, and native haptics/share sheets. It does not move money or link bank accounts. XP cannot be bought, transferred, or redeemed for money.
+DebtQuest manually tracks debts and payments. It offers payoff illustrations, daily quests, weekly consistency chests, lifetime levels, unlockable companion looks, personal rewards, backup import/export, and native haptics/share sheets. It does not move money or link bank accounts. XP cannot be bought, transferred, or redeemed for money.
 
 Connected builds add invitation-only circles, structured payment/check-in activity, encouragement, member/activity reporting, blocking, and invitation revocation. Names are filtered and circles use predefined names; no free-form chat or image uploads. Supply a monitored moderation contact and a working disposable reviewer account in App Store Connect's private review fields. Never commit reviewer credentials. Backend services must remain available during review.
 
 Account deletion: Settings → Delete cloud account → current password → type DELETE. Use a disposable account. Circle owners are warned that account deletion also removes owned circles; leaving first transfers ownership.
 
-For device-only builds, no account is required. Circles show a clear availability explanation and a separately labeled fictional demo. Onboarding leads to Today; add a debt, log a payment, and explore Journey, Circle and Rewards. Settings provides backups and tracker reset.
+For device-only builds, no account is required. Circles show a clear availability explanation and a separately labeled fictional demo. Onboarding leads to Quest; add a debt, log a payment, and explore Debts, Circle and Rewards. Settings provides backups and tracker reset.
 
 ## Owner-supplied fields
 

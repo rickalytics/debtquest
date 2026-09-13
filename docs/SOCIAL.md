@@ -54,6 +54,6 @@ Member/activity reports and blocks are available in the circle UI. Blocks hide b
 
 ## Product loop
 
-Today → one useful action → immediate progress → optional shared win → encouragement → return tomorrow. Check-in 25 XP/day; first payment per payment date 50 XP; first encouragement per day 15 XP. Payment size never changes the award. Levels use lifetime XP; rewards use spendable XP. No purchases, paid contests, cash value, or streak-loss penalties.
+Quest → one useful action → saved progress → celebration and unlock → optional shared win → encouragement. See [GAMEPLAY.md](GAMEPLAY.md) for the adventure map, companion collection, and weekly chest. Check-in 25 XP/day; first payment per payment date 50 XP; first encouragement per day 15 XP. Payment size never changes the award. Levels use lifetime XP; rewards use spendable XP. No purchases, paid contests, cash value, or streak-loss penalties.
 
 The beta should validate whether pairs return for their second and fourth weekly check-in, whether invitations turn into active circles, and whether sharing feels comfortable. Downloads and retention are outcomes to measure, not guarantees. There is no analytics SDK in this release; obtain appropriate consent and update disclosures before adding instrumentation.

@@ -6,19 +6,30 @@ import {
   Check,
   Ticket,
 } from "lucide-react";
-import { Button, Motif, SectionTitle, Progress } from "../components/ui.jsx";
+import {
+  Button,
+  Motif,
+  SectionTitle,
+  Progress,
+  InlineError,
+  useAction,
+} from "../components/ui.jsx";
 import { levelOf, BADGES } from "../lib/journey.js";
-export default function Rewards({ data, onCreate, onRedeem, busy }) {
-  const level = levelOf(data);
+import { Pip } from "../components/QuestArt.jsx";
+import { COMPANION_STYLES, companionStyle } from "../lib/game.js";
+export default function Rewards({ data, onCreate, onRedeem, onEquip, busy }) {
+  const level = levelOf(data),
+    look = companionStyle(data),
+    equip = useAction();
   return (
     <>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">MAKE THE JOURNEY FEEL GOOD</span>
+          <span className="eyebrow">THE GOOD STUFF YOU’VE EARNED</span>
           <h1>
-            A little joy along the way<span className="clay-text">.</span>
+            Your treasure, earned<span className="clay-text">.</span>
           </h1>
-          <p>You’re building a better future. Enjoy the getting there.</p>
+          <p>New looks for Pip. Little joys for you. Every step adds up.</p>
         </div>
         <Button variant="secondary" onClick={onCreate}>
           <Plus size={17} />
@@ -48,6 +59,76 @@ export default function Rewards({ data, onCreate, onRedeem, busy }) {
               ? `${Math.max(0, level.next.at - data.journey.lifetimeXP)} XP to ${level.next.name}`
               : "You’re making freedom a habit."}
           </span>
+        </div>
+      </section>
+      <section
+        className="companion-collection"
+        aria-label="Companion collection"
+      >
+        <SectionTitle
+          eyebrow="MEET YOUR ADVENTURE BUDDY"
+          title="A little Pip. A lot of personality."
+          action={
+            <span className="collection-count">
+              {
+                COMPANION_STYLES.filter((s) => s.at <= data.journey.lifetimeXP)
+                  .length
+              }{" "}
+              / 5 looks
+            </span>
+          }
+        />
+        <p className="section-description">
+          Unlock looks with lifetime XP. Equip them for free. They stay yours
+          when you spend reward points.
+        </p>
+        <InlineError error={equip.error} />
+        <div className="companion-grid">
+          {COMPANION_STYLES.map((style) => {
+            const unlocked = style.at <= data.journey.lifetimeXP,
+              selected = look.id === style.id;
+            return (
+              <article
+                className={`companion-card ${unlocked ? "unlocked" : "locked"} ${selected ? "equipped" : ""}`}
+                key={style.id}
+              >
+                <div className="companion-art">
+                  <Pip look={style.id} />
+                  {selected && (
+                    <span>
+                      <Check size={12} />
+                      EQUIPPED
+                    </span>
+                  )}
+                  {!unlocked && (
+                    <i>
+                      <LockKeyhole size={16} />
+                    </i>
+                  )}
+                </div>
+                <h3>{style.name}</h3>
+                <p>{style.island}</p>
+                <Button
+                  variant={selected ? "soft" : "secondary"}
+                  disabled={busy || equip.busy || !unlocked || selected}
+                  onClick={() => equip.run(() => onEquip(style.id))}
+                  aria-label={
+                    selected
+                      ? `${style.name} equipped`
+                      : unlocked
+                        ? `Equip ${style.name}`
+                        : `${style.name}, ${style.at - data.journey.lifetimeXP} XP to unlock`
+                  }
+                >
+                  {selected
+                    ? "Equipped"
+                    : unlocked
+                      ? "Equip look"
+                      : `${style.at - data.journey.lifetimeXP} XP to go`}
+                </Button>
+              </article>
+            );
+          })}
         </div>
       </section>
       <SectionTitle
