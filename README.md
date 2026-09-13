@@ -1,55 +1,53 @@
-# DebtQuest 🎯
+# DebtQuest
 
-Gamified debt payoff tracker PWA for couples.
+A little closer. Together.
 
-## Deploy in 5 minutes
+A private, social debt payoff journey for individuals, couples, and friends. React + Vite PWA, with a Capacitor iPhone project.
 
-### 1. Unzip & open in Cursor
+## Web development
+
+Use Node 22 or newer. Run `npm ci`, then `npm run dev`.
+
+Copy `.env.example` to `.env.local` for optional cloud mode. Both public Supabase values are needed; otherwise the app stores records on this device with IndexedDB. The Supabase schema is in `supabase/schema.sql`. Cloud writes require a connection and reject stale updates from another current-version client.
+
+`npm run build` produces the PWA plus public `/privacy.html` and `/support.html` pages. Set `VITE_SUPPORT_EMAIL` for the support contact. Fonts are bundled, with no runtime Google Fonts requests.
+
+## Social experience and preview
+
+Open `/?demo=1` to explore an interactive fictional journey. Sample changes are isolated from real tracker storage and cloud accounts. Quest, Debts, Circle and Rewards connect an illustrated adventure map, Pip companion unlocks, saved payment celebrations, daily quests, weekly consistency chests, payoff comparisons, invitation-only circles and personal rewards. See [the game loop](docs/GAMEPLAY.md) for progression and reward rules.
+
+For real circles, deploy the transactional migration and configure the live project using [SOCIAL.md](docs/SOCIAL.md). The code does not deploy Supabase automatically. Real reporting requires an assigned moderation operator and a monitored support inbox before public launch. Device-only builds remain useful private trackers.
+
+## iOS
+
+See [the complete release handoff](docs/app-store/RELEASE.md).
+
+On a compatible Mac with Xcode 26+, copy `.env.ios.example` to `.env.ios.local`, explicitly choose local or cloud mode, then run:
+
 ```bash
-unzip debtquest-app.zip -d debtquest
-cd debtquest
-npm install
+npm ci
+npm run ios:sync
+npm run release:check
+npm run ios:open
 ```
 
-### 2. Test locally
+The native project uses Swift Package Manager. `ios:sync` builds bundled assets without the PWA service worker and generates the privacy manifest for the chosen mode. Apple signing, device QA, actual App Store screenshots and submission remain release steps. A cloud release also needs the checked-in account-deletion Edge Function deployed and tested.
+
+## Backups and migration
+
+Settings → Export Backup creates a versioned JSON backup. On iOS it opens the share sheet; choose Save to Files. Settings → Import Backup accepts both new exports and the original PWA's unversioned format, validates the data, and asks before replacing current records.
+
+Local browser/PWA and native app storage are separate. Export/import explicitly to migrate local records. For existing cloud data, configure the same Supabase project and sign in with the existing account. Login does not automatically upload local records into a different cloud account.
+
+## Verification
+
 ```bash
-npm run dev
+npm test
+npx playwright install chromium
+npm run test:e2e
+npm run build
 ```
-Open http://localhost:5173 on your browser. Everything should work.
 
-### 3. Deploy to Vercel
+The iOS readiness workflow also compiles an unsigned simulator build on macOS. It does not deploy or publish the app. Reproducible artwork is generated from `assets/app-icon.svg` with `npm run icons`.
 
-**Option A — Vercel CLI (fastest):**
-```bash
-npm i -g vercel
-vercel
-```
-Follow the prompts. Done. You'll get a URL like `debtquest-xxx.vercel.app`.
-
-**Option B — GitHub + Vercel dashboard:**
-1. Push to a GitHub repo:
-   ```bash
-   git init && git add -A && git commit -m "DebtQuest v1"
-   gh repo create debtquest --private --push
-   ```
-2. Go to [vercel.com/new](https://vercel.com/new)
-3. Import the repo
-4. Framework: Vite. Leave defaults. Deploy.
-
-### 4. Add to your iPhones
-1. Open the Vercel URL in Safari on both phones
-2. Tap Share → "Add to Home Screen"
-3. It now looks and works like a native app
-
-## Tech Stack
-- **React 18** + **Vite 6**
-- **Dexie.js** (IndexedDB) — all data stays on-device, no server
-- **Recharts** — projection charts
-- **vite-plugin-pwa** — service worker, offline support, home screen install
-- **Vercel** — free hosting, automatic HTTPS
-
-## Data
-All data is stored in IndexedDB on each device. Use Settings → Export to back up as JSON. No data ever leaves your phone.
-
-## Custom Domain (optional)
-In Vercel dashboard → Settings → Domains → add `debtquest.yourdomain.com` or whatever you want.
+See [draft store copy](docs/app-store/LISTING.md) and [privacy worksheet](docs/app-store/PRIVACY.md).
